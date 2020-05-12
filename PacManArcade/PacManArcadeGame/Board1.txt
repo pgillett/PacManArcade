@@ -1,0 +1,31 @@
+﻿############################
+#............XX............#
+#.XXXX.XXXXX.XX.XXXXX.XXXX.#
+#*X++X.X+++X.XX.X+++X.X++X*#
+#.XXXX.XXXXX.XX.XXXXX.XXXX.#
+#..........................#
+#.XXXX.XX.XXXXXXXX.XX.XXXX.#
+#.XXXX.XX.XXXXXXXX.XX.XXXX.#
+#......XX....XX....XX......#
+######.XXXXX XX XXXXX.######
++++++#.XXXXX XX XXXXX.#+++++
++++++#.XX   =  =   XX.#+++++
++++++#.XX GGG--GGG XX.#+++++
+######.XX G++++++G XX.######
+TTTTT .   G++++++G   . TTTTT
+######.XX G++++++G XX.######
++++++#.XX GGGGGGGG XX.#+++++
++++++#.XX          XX.#+++++
++++++#.XX XXXXXXXX XX.#+++++
+######.XX XXXXXXXX XX.######
+#............XX............#
+#.XXXX.XXXXX.XX.XXXXX.XXXX.#
+#.XXXX.XXXXX.XX.XXXXX.XXXX.#
+#*..XX......,..,......XX..*#
+#XX.XX.XX.XXXXXXXX.XX.XX.XX#
+#XX.XX.XX.XXXXXXXX.XX.XX.XX#
+#......XX....XX....XX......#
+#.XXXXXXXXXX.XX.XXXXXXXXXX.#
+#.XXXXXXXXXX.XX.XXXXXXXXXX.#
+#..........................#
+############################
