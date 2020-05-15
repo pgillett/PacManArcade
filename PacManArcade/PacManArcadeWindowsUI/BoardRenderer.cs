@@ -6,6 +6,7 @@ using System.Drawing.Drawing2D;
 using System.Text;
 using System.Windows.Forms;
 using PacManArcadeGame;
+using PacManArcadeGame.Graphics;
 
 namespace PacManArcadeWindowsUI
 {

@@ -1,5 +1,5 @@
 ﻿using System.Windows.Forms;
-using PacManArcadeGame;
+using PacManArcadeGame.Helpers;
 
 namespace PacManArcadeWindowsUI
 {
@@ -7,7 +7,7 @@ namespace PacManArcadeWindowsUI
     {
         private readonly Inputs _inputs;
 
-        public KeyEvents(Inputs inputs, Form form)
+        public KeyEvents(Inputs inputs)
         {
             _inputs = inputs;
         }
@@ -41,7 +41,11 @@ namespace PacManArcadeWindowsUI
                 case Keys.R:
                     _inputs.Reset = true;
                     break;
-                default:
+                case Keys.P:
+                    _inputs.Pause = true;
+                    break;
+                case Keys.T:
+                    _inputs.Tick = true;
                     break;
             }
         }
