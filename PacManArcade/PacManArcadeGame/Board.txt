@@ -21,7 +21,7 @@ TTTTT .   G++++++G   . TTTTT
 #............XX............#
 #.XXXX.XXXXX.XX.XXXXX.XXXX.#
 #.XXXX.XXXXX.XX.XXXXX.XXXX.#
-#*..XX......,..,......XX..*#
+#*..XX......,  ,......XX..*#
 #XX.XX.XX.XXXXXXXX.XX.XX.XX#
 #XX.XX.XX.XXXXXXXX.XX.XX.XX#
 #......XX....XX....XX......#

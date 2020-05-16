@@ -28,7 +28,7 @@ namespace PacManArcadeGame.UiStates
             _display.WriteLine("PUSH START BUTTON", TextColour.Orange, 6, 17);
             _display.WriteLine("1 PLAYER ONLY", TextColour.Cyan, 8, 21);
             //1 OR 2 PLAYER
-            _display.WriteLine("BONUS PAC-MAN FOR 10000 pt", TextColour.Pink, 1, 25);
+            _display.WriteLine("BONUS PAC-MAN FOR 10000 pts", TextColour.Peach, 1, 25);
             _display.WriteLine("c 1980 MIDWAY MFG.CO.", TextColour.Pink, 4, 29);
 
             return true;

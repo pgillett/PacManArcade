@@ -1,4 +1,6 @@
-﻿namespace PacManArcadeGame.Graphics
+﻿using System;
+
+namespace PacManArcadeGame.Graphics
 {
     public class Animation
     {
@@ -7,16 +9,24 @@
 
         private int _tickCounter;
         private readonly bool _loops;
-        private readonly int _steps;
-        private readonly int _tickPerStep;
+        private readonly int[] _steps;
 
         public bool IsZero => Current == 0;
 
         public Animation(int steps, int tickPerStep, bool loops = true)
         {
-            _steps = steps;
-            _tickPerStep = tickPerStep;
+            _steps = new int[steps];
+            for (int i = 0; i < steps; i++)
+            {
+                _steps[i] = tickPerStep;
+            }
             _loops = loops;
+            Reset();
+        }
+
+        public Animation(int[] steps, bool loops = true)
+        {
+            _steps = steps;
             Reset();
         }
 
@@ -27,14 +37,21 @@
             Active = true;
         }
 
+        public void Stop()
+        {
+            Current = 0;
+            Active = false;
+        }
+
         public void Tick()
         {
+            if (!Active) return;
             _tickCounter++;
-            if (_tickCounter >= _tickPerStep)
+            if (_tickCounter >= _steps[Current])
             {
                 Current++;
                 _tickCounter = 0;
-                if (Current >= _steps)
+                if (Current >= _steps.Length)
                 {
                     if (_loops)
                     {

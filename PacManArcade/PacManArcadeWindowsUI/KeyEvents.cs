@@ -47,6 +47,9 @@ namespace PacManArcadeWindowsUI
                 case Keys.T:
                     _inputs.Tick = true;
                     break;
+                case Keys.I:
+                    _inputs.Invincible = true;
+                    break;
             }
         }
 

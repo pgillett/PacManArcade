@@ -2,8 +2,9 @@
 {
     public enum GhostState
     {
-        Alive, Frightened, Eyes, Dead,
+        Alive, Eyes, Dead,
         Eaten, IntoHouse, InHouse,
-        LeaveHouse
+        LeaveHouse,
+        GhostDoor
     }
 }

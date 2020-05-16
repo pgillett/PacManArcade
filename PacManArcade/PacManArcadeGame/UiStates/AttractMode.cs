@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using PacManArcadeGame.Graphics;
 using PacManArcadeGame.Helpers;
 
@@ -44,13 +45,13 @@ namespace PacManArcadeGame.UiStates
             DrawGhostAfter(423, GhostColour.Orange, 16,
                 TextColour.Orange, "-POKEY", "\"CLYDE\"");
 
-            ShowText(573, "10 pt",TextColour.White,12,24);
-            ShowText(573, "50 pt", TextColour.White, 12, 26);
+            ShowText(573, "10 pts",TextColour.White,12,24);
+            ShowText(573, "50 pts", TextColour.White, 12, 26);
             ShowIcon(573, _spriteSet.Pill, 10, 24);
-            ShowIcon(573, _spriteSet.PowerPill(false), 10, 26);
+            ShowIcon(573, _spriteSet.PowerPill, 10, 26);
 
             ShowText(633, "c 1980 MIDWAY MFG.CO.", TextColour.Pink, 4, 31);
-            ShowIcon(633, _spriteSet.PowerPill(false), 4, 20);
+            ShowIcon(633, _spriteSet.PowerPill, 4, 20);
 
             if (_attractTick > 690)
             {
@@ -59,14 +60,10 @@ namespace PacManArcadeGame.UiStates
                     _pacMan= new PacMan(new Location(_display.Width + 1, 20), Direction.Left);
                     _ghosts = new[]
                     {
-                        new Ghost(GhostColour.Red, new Location(_display.Width + 5, 20), Direction.Left,
-                            new Location(0, 0), new Location(0,0)),
-                        new Ghost(GhostColour.Pink, new Location(_display.Width + 7, 20), Direction.Left,
-                            new Location(0, 0), new Location(0,0)),
-                        new Ghost(GhostColour.Cyan, new Location(_display.Width + 9, 20), Direction.Left,
-                            new Location(0, 0), new Location(0,0)),
-                        new Ghost(GhostColour.Orange, new Location(_display.Width + 11, 20), Direction.Left,
-                            new Location(0, 0), new Location(0,0))
+                        new Ghost(GhostColour.Red, new Location(_display.Width + 5, 20), Direction.Left),
+                        new Ghost(GhostColour.Pink, new Location(_display.Width + 7, 20), Direction.Left),
+                        new Ghost(GhostColour.Cyan, new Location(_display.Width + 9, 20), Direction.Left),
+                        new Ghost(GhostColour.Orange, new Location(_display.Width + 11, 20), Direction.Left)
                     };
                     _showPowerPill = true;
                     _pointsCounter = 0;
@@ -76,9 +73,9 @@ namespace PacManArcadeGame.UiStates
                 {
                     if ((_attractTick / 8) % 2 == 0)
                     {
-                        _display.Update(_spriteSet.PowerPill(false), 10, 26);
+                        _display.Update(_spriteSet.PowerPill, 10, 26);
                         if (_showPowerPill)
-                            _display.Update(_spriteSet.PowerPill(false), 4, 20);
+                            _display.Update(_spriteSet.PowerPill, 4, 20);
                     }
                     else
                     {
@@ -98,14 +95,14 @@ namespace PacManArcadeGame.UiStates
                             _showPowerPill = false;
                             foreach (var ghost in _ghosts)
                             {
-                                ghost.ChangeState(GhostState.Frightened);
+                                ghost.SetFrightened();
                                 ghost.ChangeNextDirection(Direction.Right, new Location(_display.Width+1, 20));
                             }
                         }
 
                         _pacMan.Move(_pacMan.Direction == Direction.Left ? -0.125m : 0.125m, 0);
 
-                        foreach (var ghost in _ghosts)
+                        foreach (var ghost in _ghosts.Where(g=>g.State!=GhostState.Dead))
                         {
                             if (ghost.Direction == Direction.Left)
                             {
@@ -119,10 +116,11 @@ namespace PacManArcadeGame.UiStates
                                     ghost.Move(0.125m, 0);
                             }
 
-                            if (ghost.State == GhostState.Frightened && _pacMan.Location.IsNearTo(ghost.Location))
+                            if (ghost.Frightened && _pacMan.Location.IsNearTo(ghost.Location))
                             {
                                 _pointsCounter = 50;
                                 ghost.ChangeState(GhostState.Dead);
+                                
                             }
                         }
                     }

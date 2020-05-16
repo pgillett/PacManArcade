@@ -10,5 +10,6 @@ namespace PacManArcadeGame.Helpers
         public Boolean Reset;
         public Boolean Pause;
         public Boolean Tick;
+        public Boolean Invincible;
     }
 }

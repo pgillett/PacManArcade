@@ -20,15 +20,26 @@ namespace PacManArcadeGame
         public int SkipTickEvery { get; private set; }
         public int AsPoints { get; private set; }
         public Location HomeLocation { get; private set; }
+        public Animation FlashAnimation { get; private set; }
+        public bool Frightened { get; private set; }
 
-        public Ghost(GhostColour colour, Location location, Direction direction, Location scatterTarget, Location homeLocation)
+        public Ghost(GhostColour colour, Location location, Direction direction)
+            : this(colour, location, direction, new Location(0, 0), new Location(0, 0), false)
+        {
+
+        }
+
+        public Ghost(GhostColour colour, Location location, Direction direction, 
+            Location scatterTarget, Location homeLocation, bool startInHouse)
         {
             Colour = colour;
             Location = location;
             Direction = direction;
             ScatterTarget = scatterTarget;
             Animation = new Animation(2, 10);
-            State = GhostState.Alive;
+            FlashAnimation = new Animation(2, 7, true);
+            FlashAnimation.Stop();
+            State = startInHouse ? GhostState.InHouse : GhostState.Alive;
             HomeLocation = homeLocation;
             Target = Location.Cell;
             ChangeDirection();
@@ -40,6 +51,7 @@ namespace PacManArcadeGame
         {
             Location = Location.Add(x, y);
             Animation.Tick();
+            FlashAnimation.Tick();
         }
 
         public void MoveTowardsTarget()
@@ -50,15 +62,25 @@ namespace PacManArcadeGame
                      (Location.Y > CurrentTarget.Y ? -0.125m : 0);
             if (State == GhostState.IntoHouse)
             {
-                Move(dy != 0 ? dx : 0, dy);
+                Move(dy != 0 ? 0 : dx, dy);
             }
             else
             {
                 Move(dx, dx != 0 ? 0 : dy);
             }
         }
-        
-    public void ChangeState(GhostState state)
+
+        public void Bounds(decimal x, decimal y)
+        {
+            if (Location.IsOutOfBounds(x, y, out var dx, out var dy))
+            {
+                Location = Location.Add(dx, dy);
+                Target = Target.Add(dx, dy);
+                CurrentTarget = CurrentTarget.Add(dx, dy);
+            }
+        }
+
+        public void ChangeState(GhostState state)
         {
             State = state;
         }
@@ -125,21 +147,32 @@ namespace PacManArcadeGame
             State = GhostState.LeaveHouse;
             CurrentTarget = exitGhostHouse;
             Direction = Direction.Up;
-            ChangeDirection();
         }
 
         public void SetFrightened()
         {
-            if (State == GhostState.Alive)
+            if (State == GhostState.Alive || State == GhostState.InHouse || State == GhostState.LeaveHouse)
             {
-                State = GhostState.Frightened;
+                FlashAnimation.Stop();
+                Frightened = true;
                 FlipDirection();
             }
+        }
+
+        public void SetNotFrightened()
+        {
+            Frightened = false;
+        }
+
+        public void SetFrightenedFlash()
+        {
+            FlashAnimation.Reset();
         }
 
         public void SetEaten(int points)
         {
             State = GhostState.Eaten;
+            Frightened = false;
             AsPoints = points;
         }
 
@@ -151,6 +184,16 @@ namespace PacManArcadeGame
         public void SetAlive()
         {
             State = GhostState.Alive;
+            Direction = Direction.Left;
+            Target = new Location(Location.X, Location.CellY).Move(Direction.Left);
+            ChangeDirection();
+        }
+
+        public void SetToGhostDoor(Location ghostDoor)
+        {
+            State = GhostState.GhostDoor;
+            CurrentTarget = ghostDoor;
+            Direction = Direction.Down;
         }
 
         public void SetToIntoHouse()
@@ -165,9 +208,31 @@ namespace PacManArcadeGame
             State = GhostState.InHouse;
         }
 
-        public bool IsForcedMovement => State == GhostState.LeaveHouse
-                                        || State == GhostState.IntoHouse
-                                        || State == GhostState.InHouse;
+        public void JiggleInHouse()
+        {
+            if (Location.Y > HomeLocation.Y)
+            {
+                CurrentTarget = HomeLocation.Add(0, -0.5m);
+                Direction = Direction.Up;
+            }
+            else
+            {
+                CurrentTarget = HomeLocation.Add(0, 0.5m);
+                Direction = Direction.Down;
+            }
+        }
 
+        public bool IsSlowMo => Frightened
+                                || State == GhostState.InHouse
+                                || State == GhostState.LeaveHouse;
+
+        public bool IsForcedMovement => State == GhostState.InHouse
+                                        || State == GhostState.GhostDoor
+                                        || State == GhostState.LeaveHouse
+                                        || State == GhostState.IntoHouse;
+
+        public bool IsEyesMode => State == GhostState.Eyes
+                                  || State == GhostState.GhostDoor
+                                  || State == GhostState.IntoHouse;
     }
 }

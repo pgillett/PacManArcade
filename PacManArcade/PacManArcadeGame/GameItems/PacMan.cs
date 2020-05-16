@@ -1,4 +1,5 @@
-﻿using PacManArcadeGame.Graphics;
+﻿using System.Runtime.InteropServices.ComTypes;
+using PacManArcadeGame.Graphics;
 using PacManArcadeGame.Helpers;
 
 namespace PacManArcadeGame
@@ -20,7 +21,7 @@ namespace PacManArcadeGame
         
         public void Die()
         {
-            Animation = new Animation(12, 3, false);
+            Animation = new Animation(new [] { 30, 7, 7, 7, 7, 7, 7, 7, 7, 7, 15}, false);
             Dying = true;
         }
 
@@ -43,6 +44,14 @@ namespace PacManArcadeGame
                      (Location.Y > location.Y ? -0.125m : 0);
             if(dx!=0 || dy !=0)
                 Move(dx,dy);
+        }
+
+        public void Bounds(decimal x, decimal y)
+        {
+            if (Location.IsOutOfBounds(x, y, out var dx, out var dy))
+            {
+                Location = Location.Add(dx, dy);
+            }
         }
     }
 }

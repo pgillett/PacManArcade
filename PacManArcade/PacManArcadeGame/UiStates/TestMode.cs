@@ -27,7 +27,7 @@ namespace PacManArcadeGame.UiStates
                         var c = y * _display.Height + x + _tick * 10;
                         var chr = (char) ('A' + (c % 26));
                         c = c / 26;
-                        var col = (TextColour) (c % 5);
+                        var col = (TextColour) (c % 7);
                         _display.Update(_spriteSet.Character(col, chr), x, y);
                     }
                 }

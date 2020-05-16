@@ -102,8 +102,16 @@ namespace PacManArcadeGame.UiStates
                 {
                     if (Inputs.Player1Start)
                     {
+                        Credits--;
                         Inputs.Player1Start = false;
                         UiMode = new GameMode(this, _gameSetup);
+                    }
+                }
+                else if (UiMode is GameMode)
+                {
+                    if (!alive)
+                    {
+                        UiMode=new AttractMode(this);
                     }
                 }
 

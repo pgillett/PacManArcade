@@ -45,7 +45,5 @@
         }
 
         private string FormatScore(int score) => score == 0 ? "    00" : $"{score,-6}";
-
-       
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Serialization;
 using PacManArcadeGame.Helpers;
 
 namespace PacManArcadeGame.Map
@@ -143,9 +144,14 @@ namespace PacManArcadeGame.Map
             }
         }
 
-
-        public MapCellDetail Cell(int x, int y) =>
-            x >= 0 && x < Width && y >= 0 && y < Height ? _map[x, y] : _empty;
+        public MapCellDetail Cell(int x, int y)
+        {
+            var xok = x >= 0 && x < Width;
+            var yok = y >= 0 && y < Height;
+            if (xok && yok) return _map[x, y];
+            var src = _map[xok ? x : 0, yok ? y : 0];
+            return new MapCellDetail(this, x, y, src.CellType, src.Piece);
+        }
 
         public MapCellDetail Cell(Location location) => Cell(location.CellX, location.CellY);
 

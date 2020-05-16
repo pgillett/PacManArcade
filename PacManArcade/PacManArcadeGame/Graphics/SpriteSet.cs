@@ -19,6 +19,7 @@ namespace PacManArcadeGame.Graphics
 
             Blank = new SpriteSource(0, 6, 1);
             Pill = new SpriteSource(16, 0, 1);
+            PowerPill = new SpriteSource(20, 0, 1);
 
             _mapPieces.Add(MapDisplayPiece.Blank, Blank);
             _mapPieces.Add(MapDisplayPiece.Pill, new SpriteSource(16, 0, 1));
@@ -64,6 +65,8 @@ namespace PacManArcadeGame.Graphics
             _characters[TextColour.Pink] = CharacterColour(26);
             _characters[TextColour.Cyan] = CharacterColour(28);
             _characters[TextColour.Orange] = CharacterColour(30);
+            _characters[TextColour.Peach] = CharacterColour(34);
+            _characters[TextColour.Yellow] = CharacterColour(36);
 
             TestBox = new List<SpriteSource>
             {
@@ -85,6 +88,7 @@ namespace PacManArcadeGame.Graphics
             chars['c'] = new SpriteSource(28, 1 + yAdd, 1);
             chars['p'] = new SpriteSource(29, 1 + yAdd, 1);
             chars['t'] = new SpriteSource(30, 1 + yAdd, 1);
+            chars['s'] = new SpriteSource(31, 1 + yAdd, 1);
             chars['/'] = new SpriteSource(26, yAdd, 1);
             chars['-'] = new SpriteSource(27, yAdd, 1);
             chars['"'] = new SpriteSource(6, yAdd, 1);
@@ -96,17 +100,13 @@ namespace PacManArcadeGame.Graphics
             new Dictionary<TextColour, Dictionary<char, SpriteSource>>();
 
         public readonly SpriteSource Pill;
+        public readonly SpriteSource PowerPill;
 
         public readonly SpriteSource Blank;
 
         public ReadOnlyCollection<SpriteSource> TestBox { get; private set; }
         public ReadOnlyCollection<SpriteSource> Bonus { get; private set; }
-
-        public SpriteSource PowerPill(bool animated)
-        {
-            return new SpriteSource(animated ? 22 : 20, 0, 1);
-        }
-
+        
 
         public SpriteSource Ghost(Ghost ghost)
         {
@@ -117,13 +117,17 @@ namespace PacManArcadeGame.Graphics
                 case GhostState.Eaten:
                     return GhostPoints(ghost.AsPoints);
                 case GhostState.Eyes:
+                case GhostState.GhostDoor:
                 case GhostState.IntoHouse:
                     return Ghost(GhostColour.Eyes, ghost.Direction, ghost.Animation.Current == 0);
-                case GhostState.Frightened:
-                    return Ghost(GhostColour.BlueFlash, Direction.Right, ghost.Animation.Current == 0);
                 case GhostState.Alive:
                 case GhostState.LeaveHouse:
                 case GhostState.InHouse:
+                    if (ghost.Frightened)
+                    {
+                        return Ghost(ghost.FlashAnimation.IsZero ? GhostColour.BlueFlash : GhostColour.WhiteFlash,
+                            Direction.Right, ghost.Animation.Current == 0);
+                    }
                     return Ghost(ghost.Colour, ghost.Direction, ghost.Animation.Current == 0);
                 default:
                     return Blank;
@@ -240,7 +244,7 @@ namespace PacManArcadeGame.Graphics
         {
             if (dying)
             {
-                return new SpriteSource(8 + animation - 4 * 2, 16, 2);
+                return new SpriteSource(8 + animation * 2, 16, 2);
             }
 
             if (animation == 0)

@@ -52,8 +52,22 @@ namespace PacManArcadeGame.Helpers
             return (int) (dx * dx + dy * dy);
         }
 
-        public bool IsNearTo(Location location) => Math.Abs(X - location.X) + Math.Abs(Y - location.Y) < 0.5m;
+        public bool IsNearTo(Location location, decimal distance = 0.5m) => Math.Abs(X - location.X) + Math.Abs(Y - location.Y) < distance;
 
         public bool IsSameCell(Location location) => CellX == location.CellX && CellY == location.CellY;
+
+        public bool IsOutOfBounds(decimal x, decimal y, out decimal dx, out decimal dy)
+        {
+            dx = 0;
+            dy = 0;
+            if (X < -BoundLimit) dx = (x + BoundLimit * 2);
+            if (X > x + BoundLimit) dx = -(x + BoundLimit * 2);
+            if (Y < -BoundLimit) dy = (y + BoundLimit * 2);
+            if (Y > y + BoundLimit) dy = -(y + BoundLimit * 2);
+
+            return dx != 0 || dy != 0;
+        }
+
+        private const decimal BoundLimit = 1.5m;
     }
 }
