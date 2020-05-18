@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Xml.Linq;
 using PacManArcadeGame.Helpers;
 using PacManArcadeGame.Map;
 
@@ -75,6 +76,29 @@ namespace PacManArcadeGame.Graphics
                 new SpriteSource(31, 1, 1),
                 new SpriteSource(29, 1, 1),
             }.AsReadOnly();
+
+            BonusScores = new List<ReadOnlyCollection<SpriteSource>>
+            {
+                _bonusSet(1, 5),
+                _bonusSet(2, 5),
+                _bonusSet(3, 5),
+                _bonusSet(4, 5),
+                _bonusSet(6, 13, 14),
+                _bonusSet(7, 8, 13, 14),
+                _bonusSet(9, 10, 13, 14),
+                _bonusSet(11, 12, 13, 14)
+            }.AsReadOnly();
+        }
+
+        private ReadOnlyCollection<SpriteSource> _bonusSet(params int[] xs)
+        {
+            var set = new List<SpriteSource>();
+            foreach (var x in xs)
+            {
+                set.Add(new SpriteSource(x, 4, 1));
+            }
+
+            return set.AsReadOnly();
         }
 
         private Dictionary<char, SpriteSource> CharacterColour(int yAdd)
@@ -106,6 +130,8 @@ namespace PacManArcadeGame.Graphics
 
         public ReadOnlyCollection<SpriteSource> TestBox { get; private set; }
         public ReadOnlyCollection<SpriteSource> Bonus { get; private set; }
+
+        public ReadOnlyCollection<ReadOnlyCollection<SpriteSource>> BonusScores;
         
 
         public SpriteSource Ghost(Ghost ghost)

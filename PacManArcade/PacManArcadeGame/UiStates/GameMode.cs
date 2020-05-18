@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PacManArcadeGame.GameItems;
 using PacManArcadeGame.Graphics;
 using PacManArcadeGame.Helpers;
 using PacManArcadeGame.Map;
+using Random = PacManArcadeGame.Helpers.Random;
 
 namespace PacManArcadeGame.UiStates
 {
@@ -19,14 +21,15 @@ namespace PacManArcadeGame.UiStates
 
         public PacMan PacMan;
 
-        public Ghost Blinky;
-        public Ghost Pinky;
-        public Ghost Inky;
-        public Ghost Clyde;
+        private Ghost Blinky;
+        private Ghost Pinky;
+        private Ghost Inky;
+        private Ghost Clyde;
 
         public IEnumerable<Ghost> Ghosts => new[] {Blinky, Pinky, Inky, Clyde};
 
         public Location ExitGhostHouse;
+        public Location FruitLocation;
 
         public Map.Map Map;
 
@@ -43,6 +46,8 @@ namespace PacManArcadeGame.UiStates
 
         private int _score = 0;
         private int _pillCount = 0;
+        private int _fruitTick = 0;
+        private bool _fruitScore = false;
 
         private bool _invincible = false;
 
@@ -52,7 +57,28 @@ namespace PacManArcadeGame.UiStates
 
         private int _level = 0;
 
-        public GameMode(UiSystem uiSystem, GameSetup.GameSetup gameSetup)
+        private const int BoardYOffset = 3;
+
+        private Animation _powerPillAnimation = new Animation(2, 10);
+        private Animation _scoreAnimation = new Animation(2, 16);
+
+        private int _ghostEatenPause = 0;
+        private int _ghostEatenPoints = 0;
+
+        private int _chaseForTicks = 20 * 60;
+        private int _scatterForTicks = 7 * 60;
+
+        private bool _chaseMode;
+        private int _chaseSwitchTick;
+
+        private int _pinkyLeaveTick = 0;
+
+        private bool _demoMode = false;
+        private int _demoMoveNumber = 0;
+
+        private Random _random;
+
+        public GameMode(UiSystem uiSystem, GameSetup.GameSetup gameSetup, bool demoMode)
         {
             _uiSystem = uiSystem;
             Display = uiSystem.Display;
@@ -62,7 +88,20 @@ namespace PacManArcadeGame.UiStates
 
             _gameSetup = gameSetup;
 
-            _gameState = GameState.Intro;
+            if (demoMode)
+            {
+                _demoMode = true;
+                _lives = 0;
+                _gameState = GameState.GetReady;
+            }
+            else
+            {
+                _lives = 3;
+                _gameState = GameState.Intro;
+            }
+
+            _random =new Random();
+
             _nextTick = 120;
 
             Map = _gameSetup.Map;
@@ -79,13 +118,8 @@ namespace PacManArcadeGame.UiStates
             Clyde = _gameSetup.InitialClyde.Ghost;
             PacMan = _gameSetup.InitialPacMan.PacMan;
             ExitGhostHouse = _gameSetup.ExitGhostHouse;
+            FruitLocation = _gameSetup.FruitLocation;
         }
-
-        private const int BoardYOffset = 3;
-        public Action UiChangeState;
-
-        private Animation _powerPillAnimation = new Animation(2,10);
-        private Animation _scoreAnimation = new Animation(2, 16);
 
         public bool Tick()
         {
@@ -118,7 +152,6 @@ namespace PacManArcadeGame.UiStates
             {
                 if (_inputs.Invincible)
                 {
-                    _level++;
                     _invincible = !_invincible;
                     _inputs.Invincible = false;
                 }
@@ -139,7 +172,15 @@ namespace PacManArcadeGame.UiStates
                 }
                 else
                 {
-                    if (!CheckPacManPill())
+                    if (CheckPacManPill())
+                    {
+                        if (_pillCount == 70 || _pillCount == 170)
+                        {
+                            _fruitTick = Ticks + 8 * 60;
+                            _fruitScore = false;
+                        }
+                    }
+                    else
                     {
                         MovePacMan();
                     }
@@ -155,6 +196,14 @@ namespace PacManArcadeGame.UiStates
                         _gameState = GameState.Frightened;
                         _nextTick = Ticks + 7 * 60;
                         _ghostEatenPoints = 0;
+                    }
+
+                    if (Ticks < _fruitTick)
+                    {
+                        if (!_fruitScore)
+                        {
+                            CheckPacManFruit();
+                        }
                     }
 
                     if (_gameState == GameState.Frightened)
@@ -187,14 +236,17 @@ namespace PacManArcadeGame.UiStates
                                 ghost.SetEaten(_ghostEatenPoints);
                                 _ghostEatenPause = 60;
                                 _ghostEatenPoints++;
-                                _score += _ghostEatenPoints switch
+                                if (!_demoMode)
                                 {
-                                    0 => 200,
-                                    1 => 400,
-                                    2 => 800,
-                                    3 => 1600,
-                                    _ => 0
-                                };
+                                    _score += _ghostEatenPoints switch
+                                    {
+                                        0 => 200,
+                                        1 => 400,
+                                        2 => 800,
+                                        3 => 1600,
+                                        _ => 0
+                                    };
+                                }
                             }
                             else if (!_invincible && ghost.State == GhostState.Alive)
                             {
@@ -238,7 +290,6 @@ namespace PacManArcadeGame.UiStates
             {
                 if (Ticks > _nextTick)
                     return false;
-                Display.WriteLine("GAME  OVER", TextColour.Red, 9, 20);
             }
 
             DrawScore();
@@ -246,9 +297,6 @@ namespace PacManArcadeGame.UiStates
 
             return true;
         }
-
-        private int _ghostEatenPause = 0;
-        private int _ghostEatenPoints = 0;
 
         private void SwitchChaseMode(bool force)
         {
@@ -269,21 +317,7 @@ namespace PacManArcadeGame.UiStates
             }
         }
 
-        private int _chaseForTicks = 20 * 60;
-        private int _scatterForTicks = 7 * 60;
-
-        private bool _chaseMode;
-        private int _chaseSwitchTick;
-
-        private int _randomSeed = 0;
-
-        private int _pinkyLeaveTick = 0;
-
-        private int Random(int range)
-        {
-            _randomSeed = (_randomSeed * 13) % 123;
-            return _randomSeed % range;
-        }
+       
 
         private bool SkipMove(int skipTickEvery) => (Ticks % skipTickEvery) == 0;
 
@@ -346,7 +380,7 @@ namespace PacManArcadeGame.UiStates
                                 .Where(d => d != newDirection.Opposite())
                                 .Where(d => cell.InDirection(d).IsPlayArea)
                                 .ToArray();
-                            newDirection = directions[Random(directions.Length)];
+                            newDirection = directions[_random.Get(directions.Length)];
                         }
                         else if (ghost.State == GhostState.LeaveHouse)
                         {
@@ -411,17 +445,36 @@ namespace PacManArcadeGame.UiStates
             }
         }
 
-        private Direction[] _directions = new[] {Direction.Up, Direction.Left, Direction.Down, Direction.Right};
+        private readonly Direction[] _directions = new[] {Direction.Up, Direction.Left, Direction.Down, Direction.Right};
 
 
         private void MovePacMan()
         {
             var cell = Map.Cell(PacMan.Location);
             var close = PacMan.Location.CloseToCell;
-            if (_inputDirection != InputDirection.None)
+            var inputDirection = _inputDirection;
+            if (_demoMode)
+            {
+                var move = _gameSetup.DemoMoves[_demoMoveNumber];
+                if (close && cell.Location.IsSameCell(move.Location))
+                {
+                    _demoMoveNumber++;
+                }
+
+                inputDirection = move.Direction switch
+                {
+                    Direction.Up => InputDirection.Up,
+                    Direction.Down => InputDirection.Down,
+                    Direction.Left => InputDirection.Left,
+                    Direction.Right => InputDirection.Right,
+                    _ => throw new NotImplementedException()
+                };
+            }
+
+            if (inputDirection != InputDirection.None)
             {
                 var isLeftRight = PacMan.Direction == Direction.Left || PacMan.Direction == Direction.Right;
-                switch (_inputDirection)
+                switch (inputDirection)
                 {
                     case InputDirection.Up:
 
@@ -493,13 +546,31 @@ namespace PacManArcadeGame.UiStates
             PacMan.Bounds(MapWidth, MapHeight);
         }
 
+        private void CheckPacManFruit()
+        {
+            if (PacMan.Location.IsNearTo(FruitLocation))
+            {
+                _fruitScore = true;
+                _fruitTick = Ticks + 120;
+                if (!_demoMode)
+                {
+                    _score += _fruitScores[Bonus(_level)];
+                }
+            }
+        }
+
+        private int[] _fruitScores = new[] {100, 300, 500, 700, 1000, 2000, 3000, 5000};
+
         private bool CheckPacManPill()
         {
             var cell = Map.Cell(PacMan.Location);
             if (cell.CellType != CellType.Pill && cell.CellType != CellType.ThroughSpacePill)
                 return false;
 
-            _score += 10;
+            if (!_demoMode)
+            {
+                _score += 10;
+            }
             _pillCount++;
             cell.RemovePill();
             Display.Update(_spriteSet.Blank, cell.X, cell.Y+BoardYOffset);
@@ -512,7 +583,10 @@ namespace PacManArcadeGame.UiStates
             if (cell.CellType != CellType.PowerPill)
                 return false;
 
-            _score += 50;
+            if (!_demoMode)
+            {
+                _score += 50;
+            }
 
             Map.RemovePowerPill(cell.Location);
             cell.RemovePill();
@@ -522,15 +596,16 @@ namespace PacManArcadeGame.UiStates
 
         private void DrawScore()
         {
-            _scoreBoard.Player1Text(_scoreAnimation.IsZero);
+            _scoreBoard.Player1Text(_scoreAnimation.IsZero || _demoMode);
             _scoreBoard.HighScoreText();
             _scoreBoard.Player1Score(_score);
             _scoreBoard.HighScore(_uiSystem.GetAndUpdateHighScore(_score));
 
 
-            if (_gameState == GameState.GameOver)
+            if (_gameState == GameState.GameOver || _demoMode)
             {
                 _scoreBoard.Credits(_uiSystem.Credits);
+                Display.WriteLine("GAME  OVER", TextColour.Red, 9, 20);
             }
             else
             {
@@ -561,6 +636,23 @@ namespace PacManArcadeGame.UiStates
 
         private void DrawSprites()
         {
+            if (Ticks < _fruitTick)
+            {
+                if (_fruitScore)
+                {
+                    var set = _spriteSet.BonusScores[Bonus(_level)];
+                    var loc = FruitLocation.Add(-((set.Count - 1) / 2), 0);
+                    for (int x = 0; x < set.Count; x++)
+                    {
+                        DrawBoardSprite(set[x], loc.Add(x, 0));
+                    }
+                }
+                else
+                {
+                    DrawBoardSprite(_spriteSet.Bonus[_level], FruitLocation);
+                }
+            }
+
             if (_gameState == GameState.Intro
                 || _gameState == GameState.GetReady
                 || _powerPillAnimation.IsZero)
@@ -588,12 +680,8 @@ namespace PacManArcadeGame.UiStates
                 {
                     DrawBoardSprite(_spriteSet.Ghost(ghost), ghost.Location);
                 }
-
-               
             }
         }
-
-        private const int PacManDeadAnim = 31 + 7;
 
         private void DrawScreenSprite(SpriteSource sprite, Location location)
         {
@@ -616,14 +704,5 @@ namespace PacManArcadeGame.UiStates
                 }
             }
         }
-    }
-
-    public enum GameState
-    {
-        Intro, GetReady, Playing,
-        Frightened,
-        Caught,
-        Dying,
-        GameOver
     }
 }

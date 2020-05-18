@@ -90,7 +90,7 @@ namespace PacManArcadeGame.UiStates
                 {
                     if (!alive)
                     {
-                        UiMode = new AttractMode(this);
+                        UiMode = new GameMode(this, _gameSetup, true);
                     }
 
                     if (Credits > 0)
@@ -104,7 +104,7 @@ namespace PacManArcadeGame.UiStates
                     {
                         Credits--;
                         Inputs.Player1Start = false;
-                        UiMode = new GameMode(this, _gameSetup);
+                        UiMode = new GameMode(this, _gameSetup, false);
                     }
                 }
                 else if (UiMode is GameMode)
@@ -113,15 +113,6 @@ namespace PacManArcadeGame.UiStates
                     {
                         UiMode=new AttractMode(this);
                     }
-                }
-
-                // else if (UiMode is PlayingGame)
-                {
-
-                }
-                //  else // UiState == UiState.HighScore
-                {
-
                 }
             }
 
