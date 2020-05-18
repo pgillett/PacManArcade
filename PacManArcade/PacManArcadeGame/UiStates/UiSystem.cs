@@ -5,17 +5,21 @@ namespace PacManArcadeGame.UiStates
 {
     public class UiSystem
     {
-        public Inputs Inputs;
-        public Display Display;
-        public SpriteSet SpriteSet;
-        public ScoreBoard ScoreBoard;
+        public readonly Inputs Inputs;
+        public readonly Display Display;
+        public readonly SpriteSet SpriteSet;
+        public readonly ScoreBoard ScoreBoard;
 
-        private IRenderer _renderer;
+        private readonly IRenderer _renderer;
 
         public int Credits;
         private int _highScore;
 
         private bool _paused;
+
+        private readonly GameSetup.LevelSetup _levelSetup;
+
+        private IUiMode _uiMode;
 
         public int GetAndUpdateHighScore(int score)
         {
@@ -27,26 +31,17 @@ namespace PacManArcadeGame.UiStates
             return _highScore;
         }
 
-        public int Height => _gameSetup.MapHeight;
-        public int Width => _gameSetup.MapWidth;
-
-        private int Ticks = 0;
-
-        private GameSetup.GameSetup _gameSetup;
-
-        private IUiMode UiMode;
-
         public UiSystem(IRenderer renderer)
         {
-            _gameSetup = new GameSetup.GameSetup();
+            _levelSetup = new GameSetup.LevelSetup();
             SpriteSet = new SpriteSet();
-            Display = new Display(Height + 5, Width, SpriteSet);
+            Display = new Display(_levelSetup.MapHeight + 5, _levelSetup.MapWidth, SpriteSet);
             Inputs=new Inputs();
             ScoreBoard = new ScoreBoard(Display);
 
             _renderer = renderer;
 
-            UiMode = new TestMode(this);
+            _uiMode = new TestMode(this);
         }
 
         public void Tick()
@@ -59,7 +54,7 @@ namespace PacManArcadeGame.UiStates
 
             if (Inputs.Reset)
             {
-                UiMode = new TestMode(this);
+                _uiMode = new TestMode(this);
                 Credits = 0;
                 Inputs.Reset = false;
             }
@@ -70,48 +65,72 @@ namespace PacManArcadeGame.UiStates
                 _paused = !_paused;
             }
 
-            if (!_paused || Inputs.Tick == true)
+            if (!_paused || Inputs.Tick)
             {
-                Ticks++;
                 Display.ClearSprites();
 
                 Inputs.Tick = false;
 
-                var alive = UiMode.Tick();
+                var alive = _uiMode.Tick();
 
-                if (UiMode is TestMode)
+                switch (_uiMode)
                 {
-                    if (!alive)
+                    case TestMode _:
                     {
-                        UiMode = new AttractMode(this);
-                    }
-                }
-                else if (UiMode is AttractMode)
-                {
-                    if (!alive)
-                    {
-                        UiMode = new GameMode(this, _gameSetup, true);
-                    }
+                        if (!alive)
+                        {
+                            _uiMode = new AttractMode(this);
+                        }
 
-                    if (Credits > 0)
-                    {
-                        UiMode = new CoinsInMode(this);
+                        break;
                     }
-                }
-                else if (UiMode is CoinsInMode)
-                {
-                    if (Inputs.Player1Start)
+                    case AttractMode _:
                     {
-                        Credits--;
-                        Inputs.Player1Start = false;
-                        UiMode = new GameMode(this, _gameSetup, false);
+                        if (!alive)
+                        {
+                            _uiMode = new DemoMode(this, _levelSetup);
+                        }
+
+                        if (Credits > 0)
+                        {
+                            _uiMode = new CoinsInMode(this);
+                        }
+
+                        break;
                     }
-                }
-                else if (UiMode is GameMode)
-                {
-                    if (!alive)
+                    case CoinsInMode _:
                     {
-                        UiMode=new AttractMode(this);
+                        if (Inputs.Player1Start)
+                        {
+                            Credits--;
+                            Inputs.Player1Start = false;
+                            _uiMode = new PlayMode(this, _levelSetup);
+                        }
+
+                        break;
+                    }
+                    case DemoMode _:
+                    {
+                        if (!alive)
+                        {
+                            _uiMode = new AttractMode(this);
+                        }
+
+                        if (Credits > 0)
+                        {
+                            _uiMode = new CoinsInMode(this);
+                        }
+
+                        break;
+                    }
+                    case PlayMode _:
+                    {
+                        if (!alive)
+                        {
+                            _uiMode=new AttractMode(this);
+                        }
+
+                        break;
                     }
                 }
             }

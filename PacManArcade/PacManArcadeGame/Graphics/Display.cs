@@ -10,7 +10,7 @@ namespace PacManArcadeGame.Graphics
 
         private readonly SpriteSource[,] _screenMap;
 
-        private readonly SpriteSet SpriteSet;
+        private readonly SpriteSet _spriteSet;
 
         private List<SpriteDisplay> _sprites;
 
@@ -21,7 +21,7 @@ namespace PacManArcadeGame.Graphics
             Height = height;
             Width = width;
             _screenMap = new SpriteSource[width, height];
-            SpriteSet = spriteSet;
+            _spriteSet = spriteSet;
         }
 
         public void ClearSprites()
@@ -36,7 +36,7 @@ namespace PacManArcadeGame.Graphics
 
         public void Blank()
         {
-            Fill(SpriteSet.Blank);
+            Fill(_spriteSet.Blank);
         }
 
         public void Fill(SpriteSource source)
@@ -59,7 +59,7 @@ namespace PacManArcadeGame.Graphics
         {
             foreach (var c in text)
             {
-                Update(SpriteSet.Character(colour, c), x, y);
+                Update(_spriteSet.Character(colour, c), x, y);
                 x++;
             }
         }

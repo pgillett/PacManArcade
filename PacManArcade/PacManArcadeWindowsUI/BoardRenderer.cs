@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Text;
 using System.Windows.Forms;
-using PacManArcadeGame;
 using PacManArcadeGame.Graphics;
 
 namespace PacManArcadeWindowsUI
@@ -29,6 +26,12 @@ namespace PacManArcadeWindowsUI
         private BufferedGraphicsContext _bufferedGraphicsContext;
         private BufferedGraphics _bufferedGraphics;
         private Graphics _screenGraphics;
+
+        private int _fpsCounter;
+        private int _fps;
+        private int _fpsTotal;
+        private readonly Font _scoreFont = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
+        private readonly Brush _fpsBrush = new SolidBrush(Color.DarkRed);
 
         public BoardRenderer(Form form)
         {
@@ -56,12 +59,12 @@ namespace PacManArcadeWindowsUI
             {
                 for (var x = 0; x < display.Width; x++)
                 {
-                    var d = display.Get(x, y);
-                    var b = _screenBuffer[x, y];
-                    if (b == null || b != d)
+                    var onDisplay = display.Get(x, y);
+                    var onBuffer = _screenBuffer[x, y];
+                    if (onBuffer == null || onBuffer != onDisplay)
                     {
-                        _screenBuffer[x, y] = d;
-                        DrawToBackground(d, x, y);
+                        _screenBuffer[x, y] = onDisplay;
+                        DrawToBackground(onDisplay, x, y);
                     }
                 }
             }
@@ -75,7 +78,7 @@ namespace PacManArcadeWindowsUI
             }
         }
 
-        public void Setup(int width, int height)
+        private void Setup(int width, int height)
         {
             _staticBoard?.Dispose();
             _staticBoardGraphics?.Dispose();
@@ -151,12 +154,6 @@ namespace PacManArcadeWindowsUI
 
             _bufferedGraphics.Render();
         }
-
-        private int _fpsCounter;
-        private int _fps;
-        private int _fpsTotal;
-        private readonly Font _scoreFont = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
-        private readonly Brush _fpsBrush = new SolidBrush(Color.DarkRed);
 
         private void FPS(Graphics g)
         {

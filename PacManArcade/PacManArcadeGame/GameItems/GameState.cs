@@ -1,4 +1,6 @@
-﻿namespace PacManArcadeGame.GameItems
+﻿using System.Reflection;
+
+namespace PacManArcadeGame.GameItems
 {
     public enum GameState
     {
@@ -8,6 +10,31 @@
         Frightened,
         Caught,
         Dying,
-        GameOver
+        GameOver,
+        Complete,
+        Flash
+    }
+
+    public class GameState2
+    {
+        public bool Intro => Current == GameState.Intro;
+        public bool GetReady => Current == GameState.GetReady;
+        public GameState Current;
+        public GameState Last;
+
+        public GameState2()
+        {
+
+        }
+
+        public bool Changed
+        {
+            get
+            {
+                var c = Last != Current;
+                Last = Current;
+                return c;
+            }
+        }
     }
 }

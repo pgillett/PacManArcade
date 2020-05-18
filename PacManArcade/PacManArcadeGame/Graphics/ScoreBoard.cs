@@ -26,17 +26,18 @@
 
         public void HighScore(int score)
         {
-            _display.WriteLine(FormatScore(score), TextColour.White, 11, 1);
+            if (score > 0)
+                _display.WriteLine(FormatScore(score), TextColour.White, 11, 1);
         }
 
         public void Player1Text(bool show)
         {
-            _display.WriteLine(show?"1UP":"   ", TextColour.White, 3, 0);
+            _display.WriteLine(show ? "1UP" : "   ", TextColour.White, 3, 0);
         }
 
         public void Player2Text(bool show)
         {
-            _display.WriteLine(show?"2UP":"   ", TextColour.White, 22, 0);
+            _display.WriteLine(show ? "2UP" : "   ", TextColour.White, 22, 0);
         }
 
         public void HighScoreText()

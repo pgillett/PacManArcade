@@ -2,6 +2,12 @@
 {
     public enum TextColour
     {
-        White, Red, Pink, Cyan, Orange, Peach, Yellow
+        White,
+        Red,
+        Pink,
+        Cyan,
+        Orange,
+        Peach,
+        Yellow
     }
 }

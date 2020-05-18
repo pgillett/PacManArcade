@@ -64,9 +64,9 @@ namespace PacManArcadeGame.Map
                 new CellPattern("---X#-0#-", MapDisplayPiece.JoinRightHandBottom)
             };
 
-            //CheckList.Add(new BoardPiecePattern("-X0-##---", MapDisplayPiece.JoinBottomRight));
-            //CheckList.Add(new BoardPiecePattern("0X-##----", MapDisplayPiece.JoinBottomLeft));
-
+            // Not in the original map
+            // new CellPattern("-X0-##---", MapDisplayPiece.JoinBottomRight));
+            // new CellPattern("0X-##----", MapDisplayPiece.JoinBottomLeft));
         }
 
         public MapDisplayPiece FindBoardPiece(MapCellDetail board)

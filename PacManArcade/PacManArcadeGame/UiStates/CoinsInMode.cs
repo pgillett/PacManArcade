@@ -24,6 +24,7 @@ namespace PacManArcadeGame.UiStates
             _scoreBoard.Player2Text(true);
             _scoreBoard.Credits(_uiSystem.Credits);
             _scoreBoard.Player1Score(0);
+            _scoreBoard.HighScore(_uiSystem.GetAndUpdateHighScore(0));
 
             _display.WriteLine("PUSH START BUTTON", TextColour.Orange, 6, 17);
             _display.WriteLine("1 PLAYER ONLY", TextColour.Cyan, 8, 21);

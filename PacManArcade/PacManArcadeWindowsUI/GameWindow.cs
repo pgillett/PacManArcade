@@ -37,6 +37,8 @@ namespace PacManArcadeWindowsUI
             _uiSystem.Tick();
         }
 
+        // Use alternative timer as Forms.Timer is not very accurate at frames level
+
         //private void Repeat()
         //{
         //    var interval = 1000 / 60;

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Serialization;
 using PacManArcadeGame.Helpers;
 
 namespace PacManArcadeGame.Map
@@ -14,7 +13,7 @@ namespace PacManArcadeGame.Map
         private readonly MapCellDetail[,] _map;
 
         public int Pills;
-        public List<Location> PowerPills;
+        public readonly List<Location> PowerPills;
 
         private readonly MapCellDetail _empty;
 
@@ -73,35 +72,34 @@ namespace PacManArcadeGame.Map
                     var c = lines[y][x];
 
                     CellType piece;
-                    if (c == '.')
+                    switch (c)
                     {
-                        piece = CellType.Pill;
-                        Pills++;
-                    }
-                    else if (c == ',')
-                    {
-                        piece = CellType.ThroughSpacePill;
-                        Pills++;
-                    }
-                    else if (c == '*')
-                    {
-                        piece = CellType.PowerPill;
-                        PowerPills.Add(new Location(x, y));
-                    }
-                    else
-                    {
-                        piece = c switch
-                        {
-                            ' ' => CellType.PlayArea,
-                            'X' => CellType.SingleWall,
-                            '#' => CellType.DoubleWall,
-                            '+' => CellType.DeadSpace,
-                            'G' => CellType.GhostWall,
-                            '-' => CellType.Door,
-                            'T' => CellType.Tunnel,
-                            '=' => CellType.ThroughSpace,
-                            _ => throw new NotImplementedException()
-                        };
+                        case '.':
+                            piece = CellType.Pill;
+                            Pills++;
+                            break;
+                        case ',':
+                            piece = CellType.ThroughSpacePill;
+                            Pills++;
+                            break;
+                        case '*':
+                            piece = CellType.PowerPill;
+                            PowerPills.Add(new Location(x, y));
+                            break;
+                        default:
+                            piece = c switch
+                            {
+                                ' ' => CellType.PlayArea,
+                                'X' => CellType.SingleWall,
+                                '#' => CellType.DoubleWall,
+                                '+' => CellType.DeadSpace,
+                                'G' => CellType.GhostWall,
+                                '-' => CellType.Door,
+                                'T' => CellType.Tunnel,
+                                '=' => CellType.ThroughSpace,
+                                _ => throw new NotImplementedException()
+                            };
+                            break;
                     }
 
                     _map[x, y] = new MapCellDetail(this, x, y, piece, MapDisplayPiece.Blank);
@@ -136,8 +134,13 @@ namespace PacManArcadeGame.Map
                         case CellType.PowerPill:
                             cell.Piece = MapDisplayPiece.Blank;
                             break;
-                        default:
+                        case CellType.GhostWall:
+                        case CellType.SingleWall:
+                        case CellType.DoubleWall:
                             cell.Piece = cellPatternFinder.FindBoardPiece(cell);
+                            break;
+                        default:
+                            cell.Piece = MapDisplayPiece.Blank;
                             break;
                     }
                 }

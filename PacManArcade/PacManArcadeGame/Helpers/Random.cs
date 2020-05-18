@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PacManArcadeGame.Helpers
+﻿namespace PacManArcadeGame.Helpers
 {
     public class Random
     {
-        private int _randomSeed = 0;
+        private int _randomSeed ;
 
         public int Get(int range)
         {

@@ -1,8 +1,7 @@
-﻿using System.Runtime.InteropServices.ComTypes;
-using PacManArcadeGame.Graphics;
+﻿using PacManArcadeGame.Graphics;
 using PacManArcadeGame.Helpers;
 
-namespace PacManArcadeGame
+namespace PacManArcadeGame.GameItems
 {
     public class PacMan
     {
@@ -42,11 +41,11 @@ namespace PacManArcadeGame
                      (Location.X > location.X ? -0.125m : 0);
             var dy = (Location.Y < location.Y ? 0.125m : 0) +
                      (Location.Y > location.Y ? -0.125m : 0);
-            if(dx!=0 || dy !=0)
-                Move(dx,dy);
+            if (dx != 0 || dy != 0)
+                Move(dx, dy);
         }
 
-        public void Bounds(decimal x, decimal y)
+        public void KeepInBounds(decimal x, decimal y)
         {
             if (Location.IsOutOfBounds(x, y, out var dx, out var dy))
             {

@@ -30,20 +30,14 @@ namespace PacManArcadeGame.Helpers
             }
         }
 
-        public Location Move(Direction direction)
-        {
-            switch (direction)
+        public Location Move(Direction direction) =>
+            direction switch
             {
-                case Direction.Up:
-                    return new Location(X, Y - 1);
-                case Direction.Down:
-                    return new Location(X, Y + 1);
-                case Direction.Left:
-                    return new Location(X - 1, Y);
-                default:
-                    return new Location(X + 1, Y);
-            }
-        }
+                Direction.Up => new Location(X, Y - 1),
+                Direction.Down => new Location(X, Y + 1),
+                Direction.Left => new Location(X - 1, Y),
+                _ => new Location(X + 1, Y)
+            };
 
         public int DistanceTo(Location target)
         {
@@ -60,10 +54,24 @@ namespace PacManArcadeGame.Helpers
         {
             dx = 0;
             dy = 0;
-            if (X < -BoundLimit) dx = (x + BoundLimit * 2);
-            if (X > x + BoundLimit) dx = -(x + BoundLimit * 2);
-            if (Y < -BoundLimit) dy = (y + BoundLimit * 2);
-            if (Y > y + BoundLimit) dy = -(y + BoundLimit * 2);
+
+            if (X < -BoundLimit)
+            {
+                dx = (x + BoundLimit * 2);
+            }
+            else if (X > x + BoundLimit)
+            {
+                dx = -(x + BoundLimit * 2);
+            }
+
+            if (Y < -BoundLimit)
+            {
+                dy = (y + BoundLimit * 2);
+            }
+            else if (Y > y + BoundLimit)
+            {
+                dy = -(y + BoundLimit * 2);
+            }
 
             return dx != 0 || dy != 0;
         }

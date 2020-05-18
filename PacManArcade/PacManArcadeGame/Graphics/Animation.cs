@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace PacManArcadeGame.Graphics
+﻿namespace PacManArcadeGame.Graphics
 {
     public class Animation
     {

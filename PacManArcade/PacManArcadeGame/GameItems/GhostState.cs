@@ -1,10 +1,14 @@
-﻿namespace PacManArcadeGame
+﻿namespace PacManArcadeGame.GameItems
 {
     public enum GhostState
     {
-        Alive, Eyes, Dead,
-        Eaten, IntoHouse, InHouse,
+        Alive,
+        Eyes,
+        Eaten,
+        IntoHouse,
+        InHouse,
         LeaveHouse,
-        GhostDoor
+        GhostDoor,
+        Hidden
     }
 }

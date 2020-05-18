@@ -1,26 +1,24 @@
-﻿using System;
-using System.Security.Cryptography.X509Certificates;
-using PacManArcadeGame.Graphics;
+﻿using PacManArcadeGame.Graphics;
 using PacManArcadeGame.Helpers;
 
-namespace PacManArcadeGame
+namespace PacManArcadeGame.GameItems
 {
     public class Ghost
     {
-        public Location ScatterTarget;
+        public readonly GhostColour Colour;
+        public readonly Location HomeLocation;
+        public readonly Location ScatterTarget;
+        public readonly Animation FlashAnimation;
+        public readonly Animation Animation;
 
-        public GhostColour Colour { get; private set; }
         public Location Location { get; private set; }
-        public Direction Direction { get; private set; }
-        public Location Target { get; private set; }
-        public Animation Animation { get; private set; }
+        public Direction NextDirection { get; private set; }
+        public Location NextTarget { get; private set; }
         public GhostState State { get; private set; }
         public Location CurrentTarget { get; private set; }
         public Direction CurrentDirection { get; private set; }
         public int SkipTickEvery { get; private set; }
-        public int AsPoints { get; private set; }
-        public Location HomeLocation { get; private set; }
-        public Animation FlashAnimation { get; private set; }
+        public PointsMultiplier ShowAsPoints { get; private set; }
         public bool Frightened { get; private set; }
 
         public Ghost(GhostColour colour, Location location, Direction direction)
@@ -34,16 +32,16 @@ namespace PacManArcadeGame
         {
             Colour = colour;
             Location = location;
-            Direction = direction;
+            NextDirection = direction;
             ScatterTarget = scatterTarget;
             Animation = new Animation(2, 10);
             FlashAnimation = new Animation(2, 7, true);
             FlashAnimation.Stop();
             State = startInHouse ? GhostState.InHouse : GhostState.Alive;
             HomeLocation = homeLocation;
-            Target = Location.Cell;
+            NextTarget = Location.Cell;
             ChangeDirection();
-            Target = Location.Cell.Move(CurrentDirection);
+            NextTarget = Location.Cell.Move(CurrentDirection);
             SkipTickEvery = 16;
         }
 
@@ -70,12 +68,12 @@ namespace PacManArcadeGame
             }
         }
 
-        public void Bounds(decimal x, decimal y)
+        public void KeepInBounds(decimal width, decimal height)
         {
-            if (Location.IsOutOfBounds(x, y, out var dx, out var dy))
+            if (Location.IsOutOfBounds(width, height, out var dx, out var dy))
             {
                 Location = Location.Add(dx, dy);
-                Target = Target.Add(dx, dy);
+                NextTarget = NextTarget.Add(dx, dy);
                 CurrentTarget = CurrentTarget.Add(dx, dy);
             }
         }
@@ -87,27 +85,24 @@ namespace PacManArcadeGame
 
         public void ChangeDirection()
         {
-            CurrentDirection = Direction;
-            CurrentTarget = Target;
+            CurrentDirection = NextDirection;
+            CurrentTarget = NextTarget;
         }
 
-        public void ChangeNextDirection(Direction direction, Location target)
+        public void SetNextDirection(Direction direction, Location target)
         {
-            Direction = direction;
-            Target = target;
+            NextDirection = direction;
+            NextTarget = target;
         }
 
         public void FlipDirection()
         {
-            Direction = Direction.Opposite();
-            Target = Target.Move(Direction);
+            NextDirection = NextDirection.Opposite();
+            NextTarget = NextTarget.Move(NextDirection);
         }
 
         public bool IsAtTarget => Location.X == CurrentTarget.X && Location.Y == CurrentTarget.Y;
-
-        public bool IsOnNextTargetCell => Location.CellX == Target.X
-                                      && Location.CellY == Target.Y;
-
+        
         public Location GetChaseTarget(PacMan pacMan, Location blinky)
         {
             var pacCell = pacMan.Location.Cell;
@@ -134,19 +129,12 @@ namespace PacManArcadeGame
                     return Location.Cell;
             }
         }
-
-        public void ForceTo(Location target)
-        {
-            Target = new Location(target.X, Location.Y);
-            Direction = Direction.Up;
-            ChangeDirection();
-        }
-
+        
         public void SetToLeave(Location exitGhostHouse)
         {
             State = GhostState.LeaveHouse;
             CurrentTarget = exitGhostHouse;
-            Direction = Direction.Up;
+            NextDirection = Direction.Up;
         }
 
         public void SetFrightened()
@@ -169,11 +157,11 @@ namespace PacManArcadeGame
             FlashAnimation.Reset();
         }
 
-        public void SetEaten(int points)
+        public void SetEaten(PointsMultiplier points)
         {
             State = GhostState.Eaten;
             Frightened = false;
-            AsPoints = points;
+            ShowAsPoints = points;
         }
 
         public void SetEyes()
@@ -184,23 +172,23 @@ namespace PacManArcadeGame
         public void SetAlive()
         {
             State = GhostState.Alive;
-            Direction = Direction.Left;
-            Target = new Location(Location.X, Location.CellY).Move(Direction.Left);
+            NextDirection = Direction.Left;
+            NextTarget = new Location(Location.X, Location.CellY).Move(Direction.Left);
             ChangeDirection();
         }
 
-        public void SetToGhostDoor(Location ghostDoor)
+        public void SetTargetToGhostDoor(Location ghostDoor)
         {
             State = GhostState.GhostDoor;
             CurrentTarget = ghostDoor;
-            Direction = Direction.Down;
+            NextDirection = Direction.Down;
         }
 
         public void SetToIntoHouse()
         {
             State = GhostState.IntoHouse;
             CurrentTarget = HomeLocation;
-            Direction = Direction.Down;
+            NextDirection = Direction.Down;
         }
 
         public void SetInHouse()
@@ -213,12 +201,12 @@ namespace PacManArcadeGame
             if (Location.Y > HomeLocation.Y)
             {
                 CurrentTarget = HomeLocation.Add(0, -0.5m);
-                Direction = Direction.Up;
+                NextDirection = Direction.Up;
             }
             else
             {
                 CurrentTarget = HomeLocation.Add(0, 0.5m);
-                Direction = Direction.Down;
+                NextDirection = Direction.Down;
             }
         }
 
