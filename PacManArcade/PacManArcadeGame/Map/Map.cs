@@ -50,7 +50,14 @@ namespace PacManArcadeGame.Map
 
         public Map(string board) : this()
         {
-            var lines = board.Split(Environment.NewLine);
+            if (!board.Contains(c13))
+            {
+                board = board.Replace(c10, c13);
+            }
+
+            board = board.Replace(c10.ToString(), "");
+
+            var lines = board.Split(c13);
             Height = lines.Length;
             Width = lines.Max(l => l.Length);
 
@@ -62,6 +69,10 @@ namespace PacManArcadeGame.Map
             MakeBasicMap(lines);
             MakeDetailedMap();
         }
+
+        private const char c13 = (char) 13;
+        private const char c10 = (char) 10;
+
 
         private void MakeBasicMap(string[] lines)
         {

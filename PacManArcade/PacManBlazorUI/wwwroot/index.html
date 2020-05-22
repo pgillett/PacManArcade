@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>PacManBlazorUI</title>
+    <base href="/" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+</head>
+
+<body>
+
+<script>
+    var canvas;
+    var context;
+    var sprites;
+    var buffer = 0;
+    var tc = 0;
+    var ctx;
+    var backcanvas;
+    var backctx;
+    var skip = 0;
+
+    function SetupCanvas(cv, sp) {
+        canvas = cv;
+        context = canvas.getContext("2d", { alpha: false });
+        context.imageSmoothingEnabled = false;
+       
+        sprites = sp;
+//        alert("canvas: " + cv + " sprites:" + sp);
+
+
+    }
+
+    function Sprite(ctx, fx, fy, fs, tx, ty) {
+        ctx.drawImage(sprites, fx, fy, fs, fs, tx, ty, fs, fs);
+    }
+    
+    function SpriteSet(width, height, parms) {
+        try {
+            if (tc == 0) {
+//                alert("create");
+                tc = document.createElement('canvas');
+                tc.width = width;
+                tc.height = height;
+                ctx = tc.getContext('2d', { alpha: false });
+                ctx.imageSmoothingEnabled = false;
+                backcanvas = document.createElement('canvas');
+                backcanvas.width = width;
+                backcanvas.height = height;
+                backctx = backcanvas.getContext('2d', { alpha: false });
+                backctx.imageSmoothingEnabled = false;
+            }
+            for (var i = 0; i < parms.length; i += 6) {
+                if (parms[i] == 1) {
+                    Sprite(backctx, parms[i + 1], parms[i + 2], parms[i + 3], parms[i + 4], parms[i + 5]);
+                }
+            }
+            skip++;
+            if (skip > 0) {
+                ctx.drawImage(backcanvas, 0, 0);
+                for (var i = 0; i < parms.length; i += 6) {
+                    if (parms[i] == 0) {
+                        Sprite(ctx, parms[i + 1], parms[i + 2], parms[i + 3], parms[i + 4], parms[i + 5]);
+                    }
+                }
+                var scale = Math.min(canvas.width / width, canvas.height / height);
+ 
+                context.drawImage(tc, 0, 0, width, height, 0, 0, width * scale, height * scale);
+                skip = 0;
+            }
+        }
+        catch (e) { }
+    }
+
+  
+</script>
+
+    <app>Loading...</app>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>

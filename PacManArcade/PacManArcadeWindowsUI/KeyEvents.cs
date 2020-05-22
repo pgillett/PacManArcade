@@ -50,6 +50,9 @@ namespace PacManArcadeWindowsUI
                 case Keys.I:
                     _inputs.Invincible = true;
                     break;
+                case Keys.F:
+                    _inputs.FastForward = true;
+                    break;
             }
         }
 

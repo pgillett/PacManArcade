@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using PacManArcadeGame.GameItems;
 using PacManArcadeGame.Helpers;
+using PacManArcadeGame.Properties;
 
 namespace PacManArcadeGame.GameSetup
 {
@@ -26,7 +27,7 @@ namespace PacManArcadeGame.GameSetup
 
         public LevelSetup()
         {
-            var board = System.IO.File.ReadAllText("board.txt");
+            var board = Resources.Board;
             _map = new Map.Map(board);
         }
 
@@ -68,41 +69,45 @@ namespace PacManArcadeGame.GameSetup
                 new DemoMove(9,11, Direction.Left),
                 new DemoMove(9, 14, Direction.Down),
                 new DemoMove(1, 14, Direction.Left),
-                new DemoMove(18, 14, Direction.Left),
-                new DemoMove(18,20, Direction.Down),
-                new DemoMove(21,20,Direction.Right),
+                new DemoMove(21, 14, Direction.Left),
                 new DemoMove(21, 23, Direction.Down),
                 new DemoMove(18,23, Direction.Left),
                 new DemoMove(18,26, Direction.Down),
                 new DemoMove(15,26, Direction.Left),
                 new DemoMove(15,29, Direction.Down),
+                new DemoMove(26, 29, Direction.Right),
+                new DemoMove(26, 26, Direction.Up),
+                new DemoMove(21, 26, Direction.Left),
+                new DemoMove(21, 23, Direction.Up),
+                new DemoMove(9, 23, Direction.Left),
+                new DemoMove(9, 26, Direction.Down),
+                new DemoMove(12,26, Direction.Right),
+                new DemoMove(12,29,Direction.Down),
                 new DemoMove(1, 29, Direction.Left),
                 new DemoMove(1, 26, Direction.Up),
                 new DemoMove(3, 26, Direction.Right),
                 new DemoMove(3, 23, Direction.Up),
                 new DemoMove(1, 23, Direction.Left),
                 new DemoMove(1, 20, Direction.Up),
-                new DemoMove(6,20, Direction.Right),
-                new DemoMove(6,23,Direction.Down),
-                new DemoMove(15, 23, Direction.Right),
-                new DemoMove(15, 20, Direction.Up),
-                new DemoMove(21, 20, Direction.Right),
-                new DemoMove(21, 26, Direction.Down),
-                new DemoMove(26,26, Direction.Right),
-                new DemoMove(26, 29, Direction.Down),
-                new DemoMove(12, 29, Direction.Left),
-                new DemoMove(12, 26, Direction.Up),
-                new DemoMove(9,26, Direction.Left),
-                new DemoMove(9,23,Direction.Up),
+                new DemoMove(12,20, Direction.Right),
+                new DemoMove(12,23,Direction.Down),
                 new DemoMove(6,23, Direction.Left),
                 new DemoMove(6,26,Direction.Down),
                 new DemoMove(1,26, Direction.Left),
-                new DemoMove(1,29, Direction.Down),
-                new DemoMove(3, 26, Direction.Right),
-                new DemoMove(3, 23, Direction.Up),
-                new DemoMove(1, 23, Direction.Left),
-                new DemoMove(1, 20, Direction.Up),
-                new DemoMove(6, 20, Direction.Right),
+                new DemoMove(1,29,Direction.Down),
+                new DemoMove(15, 29, Direction.Right),
+                new DemoMove(15, 26, Direction.Up),
+                new DemoMove(18, 26, Direction.Right),
+                new DemoMove(18, 23, Direction.Up),
+                new DemoMove(21, 23, Direction.Right),
+                new DemoMove(21, 1, Direction.Up),
+                new DemoMove(15,1, Direction.Left),
+                new DemoMove(15, 5,Direction.Down),
+                new DemoMove(21,5, Direction.Right),
+                new DemoMove(21,8, Direction.Down),
+                new DemoMove(26,8,Direction.Right),
+                new DemoMove(26,5,Direction.Up),
+                new DemoMove(21,5,Direction.Left)
            }.AsReadOnly();
     }
 }

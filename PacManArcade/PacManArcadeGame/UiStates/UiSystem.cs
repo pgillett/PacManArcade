@@ -71,6 +71,13 @@ namespace PacManArcadeGame.UiStates
 
                 Inputs.Tick = false;
 
+                if (Inputs.FastForward)
+                {
+                    Inputs.FastForward = false;
+                    for (int i = 0; i < 7; i++)
+                        _uiMode.Tick();
+                }
+
                 var alive = _uiMode.Tick();
 
                 switch (_uiMode)

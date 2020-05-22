@@ -18,7 +18,7 @@ namespace PacManArcadeGame.UiStates
         {
             _tick++;
 
-            if (_tick < 60)
+            if (_tick < 30)
             {
                 for (int y = 0; y < _display.Height; y++)
                 {

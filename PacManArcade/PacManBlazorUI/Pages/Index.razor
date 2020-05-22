@@ -1,0 +1,61 @@
+﻿@page "/"
+@using PacManArcadeGame.UiStates
+@using PacManArcadeGame.GameItems
+@using PacManArcadeGame.Graphics
+@inject IJSRuntime jsRuntime
+
+<button @onclick="SetupSprite">Start</button>
+
+<canvas @ref="_canvas" height="288" width="224" style="height: 100%; width: 100%;"></canvas>
+<img @ref="_spriteMap" src="gfx.png" hidden />
+
+
+
+@code
+{
+    private UiSystem _uiSystem;
+
+    private ElementReference _canvas;
+    private ElementReference _canvas2;
+    private ElementReference _spriteMap;
+
+    private BoardRenderer _boardRenderer;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+    }
+
+    protected async Task SetupSprite()
+    {
+        await jsRuntime.InvokeVoidAsync("SetupCanvas", _canvas, _spriteMap);
+        _boardRenderer = new BoardRenderer(jsRuntime);
+        _uiSystem = new UiSystem(_boardRenderer);
+
+        var timer = new DateTime().AddSeconds(0.5);
+        while (true)
+        {
+            await Task.Delay(1);
+            if (DateTime.Now > timer)
+            {
+                timer = DateTime.Now.AddMilliseconds(16);
+                Tick();
+            }
+        }
+    }
+
+    private int frameSkip = 0;
+
+    protected async Task Tick()
+    {
+        _uiSystem.Tick();
+        frameSkip++;
+        if (frameSkip > 0)
+        {
+            frameSkip = 0;
+            jsRuntime.InvokeVoidAsync("SpriteSet", _boardRenderer.Width, _boardRenderer.Height, _boardRenderer.JSData.ToArray());
+        }
+
+    }
+
+
+}
