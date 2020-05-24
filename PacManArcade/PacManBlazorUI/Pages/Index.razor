@@ -2,11 +2,10 @@
 @using PacManArcadeGame.UiStates
 @using PacManArcadeGame.GameItems
 @using PacManArcadeGame.Graphics
+@using PacManArcadeGame.Helpers
 @inject IJSRuntime jsRuntime
 
-<button @onclick="SetupSprite">Start</button>
-
-<canvas @ref="_canvas" height="288" width="224" style="height: 100%; width: 100%;"></canvas>
+<canvas tabindex="0" @ref="_canvas" height="288" width="224" style="height: 100%; width: 100%;" @onkeydown="KeyPressed"></canvas>
 <img @ref="_spriteMap" src="gfx.png" hidden />
 
 
@@ -18,15 +17,22 @@
     private ElementReference _canvas;
     private ElementReference _canvas2;
     private ElementReference _spriteMap;
+    private string Keys;
 
     private BoardRenderer _boardRenderer;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            SetupSprite();
+        }
     }
 
     protected async Task SetupSprite()
     {
+        if (_uiSystem != null) return;
+
         await jsRuntime.InvokeVoidAsync("SetupCanvas", _canvas, _spriteMap);
         _boardRenderer = new BoardRenderer(jsRuntime);
         _uiSystem = new UiSystem(_boardRenderer);
@@ -37,7 +43,7 @@
             await Task.Delay(1);
             if (DateTime.Now > timer)
             {
-                timer = DateTime.Now.AddMilliseconds(16);
+                timer = DateTime.Now.AddMilliseconds(13);
                 Tick();
             }
         }
@@ -57,5 +63,53 @@
 
     }
 
+    private void KeyPressed(KeyboardEventArgs e)
+    {
+        var _inputs = _uiSystem.Inputs;
+        
+        switch(e.Key)
+        {
+
+            case "ArrowUp":
+                _inputs.Direction = InputDirection.Up;
+                break;
+            case "ArrowDown":
+                _inputs.Direction = InputDirection.Down;
+                break;
+            case "ArrowLeft":
+                _inputs.Direction = InputDirection.Left;
+                break;
+            case "ArrowRight":
+                _inputs.Direction = InputDirection.Right;
+                break;
+            case "C":
+            case "c":
+                _inputs.Coin = true;
+                break;
+            case "1":
+                _inputs.Player1Start = true;
+                break;
+            case "R":
+            case "r":
+                _inputs.Reset = true;
+                break;
+            case "P":
+            case "p":
+                _inputs.Pause = true;
+                break;
+            case "T":
+            case "t":
+                _inputs.Tick = true;
+                break;
+            case "I":
+            case "i":
+                _inputs.Invincible = true;
+                break;
+            case "F":
+            case "f":
+                _inputs.FastForward = true;
+                break;
+        };
+    }
 
 }

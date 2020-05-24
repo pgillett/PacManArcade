@@ -66,9 +66,8 @@
                         Sprite(ctx, parms[i + 1], parms[i + 2], parms[i + 3], parms[i + 4], parms[i + 5]);
                     }
                 }
-                var scale = Math.min(canvas.width / width, canvas.height / height);
  
-                context.drawImage(tc, 0, 0, width, height, 0, 0, width * scale, height * scale);
+                context.drawImage(tc, 0, 0, width, height);
                 skip = 0;
             }
         }
