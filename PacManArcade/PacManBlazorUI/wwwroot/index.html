@@ -25,8 +25,7 @@
 
     function SetupCanvas(cv, sp) {
         canvas = cv;
-        context = canvas.getContext("2d", { alpha: false });
-        context.imageSmoothingEnabled = false;
+        
        
         sprites = sp;
 //        alert("canvas: " + cv + " sprites:" + sp);
@@ -42,6 +41,10 @@
         try {
             if (tc == 0) {
 //                alert("create");
+                canvas.width = width;
+                canvas.height = height;
+                context = canvas.getContext("2d", { alpha: false });
+                context.imageSmoothingEnabled = false;
                 tc = document.createElement('canvas');
                 tc.width = width;
                 tc.height = height;
@@ -72,6 +75,13 @@
             }
         }
         catch (e) { }
+        var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+        var h = Math.floor(height * scale);
+        var w = Math.floor(width * scale);
+        if (canvas.style.height != h) {
+            canvas.style.height = Math.floor(height * scale) + "px";
+            canvas.style.width = Math.floor(width * scale) + "px";
+        }
     }
 
   
