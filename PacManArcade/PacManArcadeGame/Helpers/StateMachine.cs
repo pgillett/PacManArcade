@@ -13,6 +13,8 @@ namespace PacManArcadeGame.Helpers
         private T _nextState;
         private bool _entering;
         private bool _leaving;
+        private bool _triggered;
+        private bool _changed;
 
         public StateMachine(T state)
         {
@@ -34,17 +36,25 @@ namespace PacManArcadeGame.Helpers
             _entering = !_nextState.Equals(Current);
             _leaving = false;
             Current = _nextState;
+            _triggered = _changed;
+            _changed = false;
         }
 
         public void ChangeState(T state)
         {
             _nextState = state;
             _leaving = !_nextState.Equals(Current);
+            _changed = true;
         }
 
         public bool OnEntry(T state)
         {
             return Current.Equals(state) && _entering;
+        }
+
+        public bool OnTrigger(T state)
+        {
+            return Current.Equals(state) && _triggered;
         }
 
         public bool During(T state)

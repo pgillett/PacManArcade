@@ -102,7 +102,7 @@ namespace PacManArcadeGame.UiStates
                         _showPowerPill = false;
                         foreach (var ghost in _ghosts)
                         {
-                            ghost.SetFrightened();
+                            ghost.SetFrightened(60 * 60);
                             ghost.SetNextDirection(Direction.Right, new Location(_display.Width + 1, 20));
                         }
                     }

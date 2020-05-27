@@ -53,6 +53,9 @@ namespace PacManArcadeWindowsUI
                 case Keys.F:
                     _inputs.FastForward = true;
                     break;
+                case Keys.L:
+                    _inputs.LevelSkip = true;
+                    break;
             }
         }
 

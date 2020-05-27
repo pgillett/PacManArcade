@@ -137,11 +137,11 @@ namespace PacManArcadeGame.GameItems
             NextDirection = Direction.Up;
         }
 
-        public void SetFrightened()
+        public void SetFrightened(int untilFlash)
         {
             if (State == GhostState.Alive || State == GhostState.InHouse || State == GhostState.LeaveHouse)
             {
-                FlashAnimation.Stop();
+                FlashAnimation.ResetWithPause(untilFlash);
                 Frightened = true;
                 FlipDirection();
             }
@@ -150,11 +150,6 @@ namespace PacManArcadeGame.GameItems
         public void SetNotFrightened()
         {
             Frightened = false;
-        }
-
-        public void SetFrightenedFlash()
-        {
-            FlashAnimation.Reset();
         }
 
         public void SetEaten(PointsMultiplier points)

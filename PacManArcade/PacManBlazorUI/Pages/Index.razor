@@ -66,8 +66,8 @@
     private void KeyPressed(KeyboardEventArgs e)
     {
         var _inputs = _uiSystem.Inputs;
-        
-        switch(e.Key)
+
+        switch (e.Key)
         {
 
             case "ArrowUp":
@@ -109,7 +109,11 @@
             case "f":
                 _inputs.FastForward = true;
                 break;
-        };
+            case "L":
+            case "l":
+                _inputs.LevelSkip = true;
+                break;
+        }
     }
 
 }

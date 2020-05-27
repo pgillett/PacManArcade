@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PacManArcadeGame.Ai;
 using PacManArcadeGame.GameSetup;
 using PacManArcadeGame.Graphics;
 using PacManArcadeGame.Helpers;
@@ -61,24 +62,23 @@ namespace PacManArcadeGame.GameItems
         private int _ghostEatenPause = 0;
         private PointsMultiplier _ghostEatenPoints;
 
-        private int _chaseForTicks = 20 * 60;
-        private int _scatterForTicks = 7 * 60;
-
-        private bool _chaseMode;
+        private int _pacManPause = 0;
 
         private readonly bool _demoMode;
         private int _demoMoveNumber = 0;
 
         private int _flashCounter = 0;
 
+        private AiBot _aiBot;
 
         private Random _random;
 
         private readonly StateMachine<GameState> _stateMachine = new StateMachine<GameState>(GameState.Intro);
         private readonly TickCounter _tick = new TickCounter();
         private readonly TickCounter _pinkyLeave = new TickCounter();
-        private readonly TickCounter _chaseSwitch = new TickCounter();
 
+        private readonly ScatterChase _scatterChase = new ScatterChase();
+        private readonly Speeds _speeds = new Speeds();
 
         protected Game(UiSystem uiSystem, LevelSetup levelSetup, bool demoMode)
         {
@@ -121,6 +121,7 @@ namespace PacManArcadeGame.GameItems
         private void StartLevel()
         {
             _map = _levelSetup.Map;
+            _aiBot = new AiBot(_map);
             _exitGhostHouse = _levelSetup.ExitGhostHouse;
             ResetGhostsAndPacMan();
             DrawMap(false);
@@ -137,7 +138,6 @@ namespace PacManArcadeGame.GameItems
 
             _tick.Tick();
             _pinkyLeave.Tick();
-            _chaseSwitch.Tick();
 
             _display.ClearSprites();
             _scoreAnimation.Tick();
@@ -147,6 +147,12 @@ namespace PacManArcadeGame.GameItems
             {
                 _invincible = !_invincible;
                 Inputs.Invincible = false;
+            }
+
+            if (Inputs.LevelSkip)
+            {
+                _stateMachine.ChangeState(GameState.Complete);
+                Inputs.LevelSkip = false;
             }
 
             if (_stateMachine.OnEntry(GameState.Intro))
@@ -159,7 +165,7 @@ namespace PacManArcadeGame.GameItems
                 _display.WriteLine("PLAYER ONE", TextColour.Cyan, 9, 14);
                 _display.WriteLine("READY!", TextColour.Yellow, 11, 20);
                 if (_tick.IsAtEvent)
-                    _stateMachine.ChangeState(GameState.GetReady);
+                    _stateMachine.ChangeState(GameState.StartOfLife);
             }
 
             if (_stateMachine.OnEntry(GameState.StartOfLife))
@@ -194,12 +200,19 @@ namespace PacManArcadeGame.GameItems
 
             if(_stateMachine.OnEntry(GameState.Playing))
             {
-                SwitchChaseMode(true);
+                _scatterChase.Reset(_level);
+                _speeds.SetLevel(_level);
             }
 
-            if(_stateMachine.During(GameState.Playing, GameState.Frightened))
+            if (_stateMachine.During(GameState.Playing, GameState.Frightened))
             {
-                SwitchChaseMode(false);
+                if (_stateMachine.During(GameState.Playing))
+                {
+                    if (_scatterChase.Tick())
+                    {
+                        SwitchChaseMode();
+                    }
+                }
 
                 _powerPillAnimation.Tick();
 
@@ -215,9 +228,9 @@ namespace PacManArcadeGame.GameItems
                 }
                 else
                 {
-                    if (!CheckPacManPill())
+                    if (CheckPacManPill())
                     {
-                        MovePacMan();
+                        _pacManPause = 1;
                     }
 
                     _bonusFruit.Tick(_pillCount);
@@ -225,36 +238,39 @@ namespace PacManArcadeGame.GameItems
                     MoveGhosts(false);
                     if (CheckPacManPowerPill())
                     {
+                        _pacManPause = 3;
                         foreach (var ghost in Ghosts)
                         {
-                            ghost.SetFrightened();
+                            // Halved timer hack as moving every other tick
+                            ghost.SetFrightened(_speeds.FrightenedFlashTime / 2);
                         }
 
                         _stateMachine.ChangeState(GameState.Frightened);
-//                        _gameState = GameState.Frightened;
                     }
+
+                    if (_pacManPause == 0)
+                    {
+                        MovePacMan();
+                    }
+                    else
+                    {
+                        _pacManPause--;
+                    }
+
 
                     if (_bonusFruit.ShowAsFruit)
                     {
                         CheckPacManFruit();
                     }
 
-                    if (_stateMachine.OnEntry(GameState.Frightened))
+                    if (_stateMachine.OnTrigger(GameState.Frightened))
                     {
-                        _tick.NextEventAfter(7 * 60);
+                        _tick.NextEventAfter(_speeds.FrightenedTime);
                         _ghostEatenPoints = 0;
                     }
 
                     if (_stateMachine.During(GameState.Frightened))
                     {
-                        if (_tick.IsWithinNext(3 * 60))
-                        {
-                            foreach (var ghost in Ghosts.Where(g => g.Frightened && !g.FlashAnimation.Active))
-                            {
-                                ghost.SetFrightenedFlash();
-                            }
-                        }
-
                         if (_tick.IsAtEvent)
                         {
                             _stateMachine.ChangeState(GameState.Playing);
@@ -403,23 +419,12 @@ namespace PacManArcadeGame.GameItems
             return true;
         }
 
-        private void SwitchChaseMode(bool force)
+        private void SwitchChaseMode()
         {
-            if (force)
-            {
-                _chaseMode = false;
-                _chaseSwitch.NextEventAfter(_scatterForTicks);
-            }
-
-            if (_stateMachine.During(GameState.Playing) && _chaseSwitch.IsAtEvent)
-            {
-                _chaseMode = !_chaseMode;
-                _chaseSwitch.NextEventAfter(_chaseMode ? _chaseForTicks : _scatterForTicks);
                 foreach (var ghost in Ghosts)
                 {
                     ghost.FlipDirection();
                 }
-            }
         }
 
         private bool SkipMove(int skipTickEvery) => _tick.IsTickStepZero(skipTickEvery);
@@ -429,7 +434,7 @@ namespace PacManArcadeGame.GameItems
             foreach (var ghost in Ghosts)
             {
                 if (onlyEyes && !ghost.IsEyesMode) continue;
-                if(SkipMove(16)) continue;
+                if (SkipMove(16)) continue;
                 if ((ghost.IsSlowMo || _map.Cell(ghost.Location).CellType == CellType.Tunnel)
                     && SkipMove(2)) continue;
 
@@ -496,7 +501,7 @@ namespace PacManArcadeGame.GameItems
                             switch (ghost.State)
                             {
                                 case GhostState.Alive:
-                                    target = _chaseMode
+                                    target = _scatterChase.InChaseMode
                                         ? ghost.GetChaseTarget(_pacMan, _blinky.Location)
                                         : ghost.ScatterTarget;
                                     break;
@@ -552,20 +557,32 @@ namespace PacManArcadeGame.GameItems
             var inputDirection = InputDirection;
             if (_demoMode)
             {
-                var move = _levelSetup.DemoMoves[_demoMoveNumber];
-                if (close && cell.Location.IsSameCell(move.Location))
+                if (_pacMan.Location.CloseToCell ||true)
                 {
-                    _demoMoveNumber++;
+                    var direction = _aiBot.BestMove(_pacMan.Location, _pacMan.Direction, Ghosts);
+                    inputDirection = direction switch
+                    {
+                        Direction.Up => InputDirection.Up,
+                        Direction.Down => InputDirection.Down,
+                        Direction.Left => InputDirection.Left,
+                        Direction.Right => InputDirection.Right,
+                        _ => throw new NotImplementedException()
+                    };
                 }
+                //var move = _levelSetup.DemoMoves[_demoMoveNumber];
+                //if (close && cell.Location.IsSameCell(move.Location))
+                //{
+                //    _demoMoveNumber++;
+                //}
 
-                inputDirection = move.Direction switch
-                {
-                    Direction.Up => InputDirection.Up,
-                    Direction.Down => InputDirection.Down,
-                    Direction.Left => InputDirection.Left,
-                    Direction.Right => InputDirection.Right,
-                    _ => throw new NotImplementedException()
-                };
+                //inputDirection = move.Direction switch
+                //{
+                //    Direction.Up => InputDirection.Up,
+                //    Direction.Down => InputDirection.Down,
+                //    Direction.Left => InputDirection.Left,
+                //    Direction.Right => InputDirection.Right,
+                //    _ => throw new NotImplementedException()
+                //};
             }
 
             if (inputDirection != InputDirection.None)

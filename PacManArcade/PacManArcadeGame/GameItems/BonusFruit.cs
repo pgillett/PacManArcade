@@ -53,7 +53,7 @@ namespace PacManArcadeGame.GameItems
             }
             else if (coinsEaten == 70 || coinsEaten == 170)
             {
-                _tickCounter = 7 * 60;
+                _tickCounter = 9 * 60;
                 ShowAsScore = false;
             }
             else

@@ -8,6 +8,7 @@
         private int _tickCounter;
         private readonly bool _loops;
         private readonly int[] _steps;
+        private int _pause;
 
         public bool IsZero => Current == 0;
 
@@ -33,6 +34,13 @@
             _tickCounter = 0;
             Current = 0;
             Active = true;
+            _pause = 0;
+        }
+
+        public void ResetWithPause(int pause)
+        {
+            Reset();
+            _pause = pause;
         }
 
         public void Stop()
@@ -44,6 +52,11 @@
         public void Tick()
         {
             if (!Active) return;
+            if (_pause > 0)
+            {
+                _pause--;
+                return;
+            }
             _tickCounter++;
             if (_tickCounter >= _steps[Current])
             {

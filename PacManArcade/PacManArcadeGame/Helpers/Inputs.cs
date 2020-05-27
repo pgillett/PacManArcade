@@ -12,5 +12,6 @@ namespace PacManArcadeGame.Helpers
         public Boolean Tick;
         public Boolean Invincible;
         public Boolean FastForward;
+        public Boolean LevelSkip;
     }
 }
