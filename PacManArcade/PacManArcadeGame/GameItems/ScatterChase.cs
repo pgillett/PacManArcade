@@ -28,6 +28,7 @@ namespace PacManArcadeGame.GameItems
         public void Reset(int level)
         {
             _level = level;
+            _switch = 0;
             _counter = NewTime();
         }
 

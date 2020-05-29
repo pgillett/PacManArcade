@@ -32,17 +32,20 @@ namespace PacManArcadeGame.GameItems
         public void Move(decimal x, decimal y)
         {
             Location = Location.Add(x, y);
-            Animation.Tick();
         }
 
-        public void MoveTowards(Location location)
+        public void MoveTowards(Location location, bool withAnimate)
         {
             var dx = (Location.X < location.X ? 0.125m : 0) +
                      (Location.X > location.X ? -0.125m : 0);
             var dy = (Location.Y < location.Y ? 0.125m : 0) +
                      (Location.Y > location.Y ? -0.125m : 0);
             if (dx != 0 || dy != 0)
+            {
                 Move(dx, dy);
+                if(withAnimate)
+                    Animation.Tick();
+            }
         }
 
         public void KeepInBounds(decimal x, decimal y)

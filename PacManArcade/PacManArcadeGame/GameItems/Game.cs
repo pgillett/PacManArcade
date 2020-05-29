@@ -75,10 +75,13 @@ namespace PacManArcadeGame.GameItems
 
         private readonly StateMachine<GameState> _stateMachine = new StateMachine<GameState>(GameState.Intro);
         private readonly TickCounter _tick = new TickCounter();
-        private readonly TickCounter _pinkyLeave = new TickCounter();
 
         private readonly ScatterChase _scatterChase = new ScatterChase();
         private readonly Speeds _speeds = new Speeds();
+
+        private readonly SpeedCounter _pacManSpeed = new SpeedCounter();
+
+        private readonly GhostHouse _ghostHouse = new GhostHouse();
 
         protected Game(UiSystem uiSystem, LevelSetup levelSetup, bool demoMode)
         {
@@ -109,6 +112,8 @@ namespace PacManArcadeGame.GameItems
             StartLevel();
         }
 
+        private int PillsRemaining => _map.Pills - _pillCount;
+
         private void ResetGhostsAndPacMan()
         {
             _blinky = _levelSetup.InitialBlinky;
@@ -116,6 +121,7 @@ namespace PacManArcadeGame.GameItems
             _inky = _levelSetup.InitialInky;
             _clyde = _levelSetup.InitialClyde;
             _pacMan = _levelSetup.InitialPacMan;
+            _scatterChase.Reset(_level);
         }
 
         private void StartLevel()
@@ -129,6 +135,7 @@ namespace PacManArcadeGame.GameItems
             _powerPillAnimation.Reset();
             _scoreAnimation.Reset();
             _bonusFruit.SetLevel(_level);
+            _ghostHouse.SetLevel(_level, Ghosts);
             _random = new Random();
         }
 
@@ -137,7 +144,6 @@ namespace PacManArcadeGame.GameItems
             _stateMachine.Start();
 
             _tick.Tick();
-            _pinkyLeave.Tick();
 
             _display.ClearSprites();
             _scoreAnimation.Tick();
@@ -181,7 +187,6 @@ namespace PacManArcadeGame.GameItems
             if (_stateMachine.During(GameState.StartOfLife, GameState.NewLevel))
             {
                 _stateMachine.ChangeState(GameState.GetReady);
-                _pinkyLeave.NextEventAfter(6 * 60);
             }
             
             if (_stateMachine.OnEntry(GameState.GetReady))
@@ -206,6 +211,9 @@ namespace PacManArcadeGame.GameItems
 
             if (_stateMachine.During(GameState.Playing, GameState.Frightened))
             {
+                _ghostHouse.Tick();
+                _ghostHouse.SetActiveGhost(Ghosts);
+
                 if (_stateMachine.During(GameState.Playing))
                 {
                     if (_scatterChase.Tick())
@@ -224,25 +232,34 @@ namespace PacManArcadeGame.GameItems
                         foreach (var ghost in Ghosts.Where(g => g.State == GhostState.Eaten))
                             ghost.SetEyes();
                     }
+
                     MoveGhosts(true);
                 }
                 else
                 {
+                    foreach (var ghost in Ghosts)
+                    {
+                        ghost.Animate();
+                    }
+
                     if (CheckPacManPill())
                     {
                         _pacManPause = 1;
+                        _ghostHouse.PillEaten();
                     }
 
                     _bonusFruit.Tick(_pillCount);
-
+                    
                     MoveGhosts(false);
+
                     if (CheckPacManPowerPill())
                     {
                         _pacManPause = 3;
+                        _ghostHouse.PillEaten();
                         foreach (var ghost in Ghosts)
                         {
                             // Halved timer hack as moving every other tick
-                            ghost.SetFrightened(_speeds.FrightenedFlashTime / 2);
+                            ghost.SetFrightened(_speeds.FrightenedFlashTime);
                         }
 
                         _stateMachine.ChangeState(GameState.Frightened);
@@ -250,7 +267,15 @@ namespace PacManArcadeGame.GameItems
 
                     if (_pacManPause == 0)
                     {
-                        MovePacMan();
+                        _pacManSpeed.SetSpeed(_stateMachine.During(GameState.Frightened) 
+                            ? _speeds.PacManFrightenedSpeed 
+                            : _speeds.PacManSpeed);
+                        _pacManSpeed.Tick();
+                        MovePacMan(true);
+                        if (_pacManSpeed.ExtraFrame)
+                        {
+                            MovePacMan(false);
+                        }
                     }
                     else
                     {
@@ -394,6 +419,7 @@ namespace PacManArcadeGame.GameItems
                     {
                         _stateMachine.ChangeState(GameState.StartOfLife);
                         ResetGhostsAndPacMan();
+                        _ghostHouse.LifeLost();
                     }
                     else
                     {
@@ -421,10 +447,10 @@ namespace PacManArcadeGame.GameItems
 
         private void SwitchChaseMode()
         {
-                foreach (var ghost in Ghosts)
-                {
-                    ghost.FlipDirection();
-                }
+            foreach (var ghost in Ghosts)
+            {
+                ghost.FlipDirection();
+            }
         }
 
         private bool SkipMove(int skipTickEvery) => _tick.IsTickStepZero(skipTickEvery);
@@ -433,124 +459,150 @@ namespace PacManArcadeGame.GameItems
         {
             foreach (var ghost in Ghosts)
             {
-                if (onlyEyes && !ghost.IsEyesMode) continue;
-                if (SkipMove(16)) continue;
-                if ((ghost.IsSlowMo || _map.Cell(ghost.Location).CellType == CellType.Tunnel)
-                    && SkipMove(2)) continue;
-
-                if (ghost.IsForcedMovement)
+                if (ghost.IsEyesMode)
                 {
-                    ghost.MoveTowardsTarget();
-                    if (ghost.IsAtTarget)
-                    {
-                        if (ghost.State == GhostState.GhostDoor)
-                        {
-                            ghost.SetToIntoHouse();
-                        }
-                        else if (ghost.State == GhostState.IntoHouse)
-                        {
-                            ghost.SetInHouse();
-                        }
-                        else if (ghost.State == GhostState.InHouse)
-                        {
-                            if (ghost.Colour == GhostColour.Red || (ghost.Colour == GhostColour.Pink && _pinkyLeave.IsAtEvent)
-                                                                || (ghost.Colour == GhostColour.Cyan && _pillCount > 30)
-                                                                || (ghost.Colour == GhostColour.Orange &&
-                                                                    ((decimal) _pillCount) / _map.Pills > 0.3m))
-                            {
-                                ghost.SetToLeave(_exitGhostHouse);
-                            }
-                            else
-                            {
-                                ghost.JiggleInHouse();
-                            }
-                        }
-                        else if (ghost.State == GhostState.LeaveHouse)
-                        {
-                            ghost.SetAlive();
-                        }
-                    }
+                    MoveGhost(ghost);
+                    MoveGhost(ghost);
                 }
-                else
+                if (!onlyEyes)
                 {
-                    if (ghost.IsAtTarget)
+                    ghost.SpeedCounter.Tick();
+                    if (_map.Cell(ghost.Location).CellType == CellType.Tunnel)
                     {
-                        ghost.ChangeDirection();
+                        ghost.SpeedCounter.SetSpeed(_speeds.GhostTunnelSpeed);
+                    }
+                    else if (ghost.IsSlowMo)
+                    {
+                        ghost.SpeedCounter.SetSpeed(_speeds.GhostFrightenedSpeed);
+                    }
+                    else
+                    {
+                        ghost.SpeedCounter.SetSpeed(ghost.Colour == GhostColour.Red
+                            ? _speeds.ElroySpeed(PillsRemaining)
+                            : _speeds.GhostSpeed);
+                    }
 
-                        var nextGhostCell = ghost.CurrentTarget.Cell;
-                        var cell = _map.Cell(nextGhostCell);
+                    if (!ghost.SpeedCounter.SkipFrame)
+                        MoveGhost(ghost);
+                    if (ghost.SpeedCounter.ExtraFrame)
+                        MoveGhost(ghost);
+                }
+            }
+        }
 
-                        var newDirection = ghost.NextDirection;
-
-                        if (ghost.Frightened)
+        private void MoveGhost(Ghost ghost)
+        {
+            if (ghost.IsForcedMovement)
+            {
+                ghost.MoveTowardsTarget();
+                if (ghost.IsAtTarget)
+                {
+                    if (ghost.State == GhostState.GhostDoor)
+                    {
+                        ghost.SetToIntoHouse();
+                    }
+                    else if (ghost.State == GhostState.IntoHouse)
+                    {
+                        ghost.SetInHouse();
+                    }
+                    else if (ghost.State == GhostState.InHouse)
+                    {
+                        if (ghost.Colour == GhostColour.Red || _ghostHouse.ShouldLeave(ghost))
                         {
-                            var directions = _directions
-                                .Where(d => d != newDirection.Opposite())
-                                .Where(d => cell.InDirection(d).IsPlayArea)
-                                .ToArray();
-                            newDirection = directions[_random.Get(directions.Length)];
-                        }
-                        else if (ghost.State == GhostState.LeaveHouse)
-                        {
-                            ghost.SetAlive();
-                            ghost.SetNextDirection(Direction.Left, nextGhostCell.Move(Direction.Left));
+                            ghost.SetToLeave(_exitGhostHouse);
                         }
                         else
                         {
-                            Location target;
-                            switch (ghost.State)
-                            {
-                                case GhostState.Alive:
-                                    target = _scatterChase.InChaseMode
-                                        ? ghost.GetChaseTarget(_pacMan, _blinky.Location)
-                                        : ghost.ScatterTarget;
-                                    break;
-                                case GhostState.Eyes:
-                                    target = _exitGhostHouse;
-                                    if (ghost.Location.IsNearTo(_exitGhostHouse,1.5m))
-                                    {
-                                        ghost.SetTargetToGhostDoor(_exitGhostHouse);
-                                    }
-
-                                    break;
-
-                                default:
-                                    target = ghost.Location;
-                                    break;
-                            }
-
-                            if (ghost.State != GhostState.Alive || !cell.IsThrough
-                                                                || !cell.InDirection(newDirection).IsPlayArea)
-                            {
-                                var possibles = _directions
-                                    .Where(d => d != newDirection.Opposite())
-                                    .Where(d => ghost.State == GhostState.Eyes
-                                        ? cell.InDirection(d).IsGhostEyeArea
-                                        : cell.InDirection(d).IsPlayArea)
-                                    .OrderBy(d => nextGhostCell.Move(d).DistanceTo(target))
-                                    .ToArray();
-
-                                if (possibles.Length > 0)
-                                    newDirection = possibles[0];
-                            }
+                            ghost.JiggleInHouse();
                         }
-
-                        ghost.SetNextDirection(newDirection, nextGhostCell.Move(newDirection));
                     }
-
-                    ghost.MoveTowardsTarget();
-                    if (ghost.IsEyesMode)
+                    else if (ghost.State == GhostState.LeaveHouse)
                     {
-                        ghost.MoveTowardsTarget();
+                        ghost.SetAlive();
                     }
                 }
-                ghost.KeepInBounds(MapWidth, MapHeight);
             }
+            else
+            {
+                if (ghost.IsAtTarget)
+                {
+                    ghost.ChangeDirection();
+
+                    var nextGhostCell = ghost.CurrentTarget.Cell;
+                    var cell = _map.Cell(nextGhostCell);
+
+                    var newDirection = ghost.NextDirection;
+
+                    var inChase = _scatterChase.InChaseMode ||
+                                  (ghost.Colour == GhostColour.Red
+                                   && _speeds.InElroy(PillsRemaining)
+                                   && Ghosts.All(g => g.State == GhostState.Alive));
+
+                    if (ghost.Frightened)
+                    {
+                        var directions = _directions
+                            .Where(d => d != newDirection.Opposite())
+                            .Where(d => cell.InDirection(d).IsPlayArea)
+                            .ToArray();
+                        newDirection = directions[_random.Get(directions.Length)];
+                    }
+                    else if (ghost.State == GhostState.LeaveHouse)
+                    {
+                        ghost.SetAlive();
+                        ghost.SetNextDirection(Direction.Left, nextGhostCell.Move(Direction.Left));
+                    }
+                    else
+                    {
+                        Location target;
+                        switch (ghost.State)
+                        {
+                            case GhostState.Alive:
+                                target =inChase
+                                    ? ghost.GetChaseTarget(_pacMan, _blinky.Location)
+                                    : ghost.ScatterTarget;
+                                break;
+                            case GhostState.Eyes:
+                                target = _exitGhostHouse;
+                                if (ghost.Location.IsNearTo(_exitGhostHouse, 1.5m))
+                                {
+                                    ghost.SetTargetToGhostDoor(_exitGhostHouse);
+                                }
+
+                                break;
+
+                            default:
+                                target = ghost.Location;
+                                break;
+                        }
+
+                        if (ghost.State != GhostState.Alive || !cell.IsThrough
+                                                            || !cell.InDirection(newDirection).IsPlayArea)
+                        {
+                            var possibles = _directions
+                                .Where(d => d != newDirection.Opposite())
+                                .Where(d => ghost.State == GhostState.Eyes
+                                    ? cell.InDirection(d).IsGhostEyeArea
+                                    : cell.InDirection(d).IsPlayArea)
+                                .OrderBy(d => nextGhostCell.Move(d).DistanceTo(target))
+                                .ToArray();
+
+                            if (possibles.Length > 0)
+                                newDirection = possibles[0];
+                        }
+                    }
+
+                    ghost.SetNextDirection(newDirection, nextGhostCell.Move(newDirection));
+                }
+
+                ghost.MoveTowardsTarget();
+            }
+
+            ghost.KeepInBounds(MapWidth, MapHeight);
         }
 
         private readonly Direction[] _directions = {Direction.Up, Direction.Left, Direction.Down, Direction.Right};
         
-        private void MovePacMan()
+        private void MovePacMan(bool withAnimation)
         {
             var cell = _map.Cell(_pacMan.Location);
             var close = _pacMan.Location.CloseToCell;
@@ -655,7 +707,7 @@ namespace PacManArcadeGame.GameItems
                     break;
             }
 
-            _pacMan.MoveTowards(target.Location);
+            _pacMan.MoveTowards(target.Location, withAnimation);
 
             _pacMan.KeepInBounds(MapWidth, MapHeight);
         }

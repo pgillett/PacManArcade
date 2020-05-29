@@ -20,6 +20,7 @@ namespace PacManArcadeGame.GameItems
         public int SkipTickEvery { get; private set; }
         public PointsMultiplier ShowAsPoints { get; private set; }
         public bool Frightened { get; private set; }
+        public SpeedCounter SpeedCounter { get; private set; }
 
         public Ghost(GhostColour colour, Location location, Direction direction)
             : this(colour, location, direction, new Location(0, 0), new Location(0, 0), false)
@@ -35,7 +36,7 @@ namespace PacManArcadeGame.GameItems
             NextDirection = direction;
             ScatterTarget = scatterTarget;
             Animation = new Animation(2, 10);
-            FlashAnimation = new Animation(2, 7, true);
+            FlashAnimation = new Animation(2, 14, true);
             FlashAnimation.Stop();
             State = startInHouse ? GhostState.InHouse : GhostState.Alive;
             HomeLocation = homeLocation;
@@ -43,11 +44,16 @@ namespace PacManArcadeGame.GameItems
             ChangeDirection();
             NextTarget = Location.Cell.Move(CurrentDirection);
             SkipTickEvery = 16;
+            SpeedCounter = new SpeedCounter();
         }
 
         public void Move(decimal x, decimal y)
         {
             Location = Location.Add(x, y);
+        }
+
+        public void Animate()
+        {
             Animation.Tick();
             FlashAnimation.Tick();
         }
@@ -118,8 +124,11 @@ namespace PacManArcadeGame.GameItems
                         .Move(pacMan.Direction)
                         .Move(pacMan.Direction);
                 case GhostColour.Cyan:
-                    var dx = pacCell.X - blinky.X;
-                    var dy = pacCell.Y - blinky.Y;
+                    var newCell = pacCell
+                        .Move(pacMan.Direction)
+                        .Move(pacMan.Direction);
+                    var dx = newCell.X - blinky.X;
+                    var dy = newCell.Y - blinky.Y;
                     return blinky.Add(2 * dx, 2 * dy);
                 case GhostColour.Orange:
                     return Location.Cell.DistanceTo(pacCell) < 64 
