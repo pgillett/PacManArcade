@@ -108,6 +108,7 @@ namespace PacManArcadeGame.UiStates
                     }
 
                     _pacMan.Move(_pacMan.Direction == Direction.Left ? -0.125m : 0.125m, 0);
+                    _pacMan.Animation.Tick();
 
                     foreach (var ghost in _ghosts.Where(g => g.State != GhostState.Hidden))
                     {

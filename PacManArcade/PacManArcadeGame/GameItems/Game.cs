@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using PacManArcadeGame.Ai;
 using PacManArcadeGame.GameSetup;
@@ -139,6 +140,18 @@ namespace PacManArcadeGame.GameItems
             _random = new Random();
         }
 
+        private void DisplayReadyText()
+        {
+            _display.WriteLine("PLAYER ONE", TextColour.Cyan, 9, 14);
+            _display.WriteLine("READY!", TextColour.Yellow, 11, 20);
+        }
+
+        private void ClearReadyText()
+        {
+            _display.WriteLine("          ", TextColour.Cyan, 9, 14);
+            _display.WriteLine("      ", TextColour.Yellow, 11, 20);
+        }
+
         public bool Tick()
         {
             _stateMachine.Start();
@@ -161,296 +174,426 @@ namespace PacManArcadeGame.GameItems
                 Inputs.LevelSkip = false;
             }
 
-            if (_stateMachine.OnEntry(GameState.Intro))
-            {
-                _tick.NextEventAfter(120);
-                StartLevel();
-            }
-            if(_stateMachine.During(GameState.Intro))
-            {
-                _display.WriteLine("PLAYER ONE", TextColour.Cyan, 9, 14);
-                _display.WriteLine("READY!", TextColour.Yellow, 11, 20);
-                if (_tick.IsAtEvent)
-                    _stateMachine.ChangeState(GameState.StartOfLife);
-            }
+            _stateMachine
+                .OnEntry(GameState.Intro,
+                    () => _tick.NextEventAfter(120),
+                    StartLevel)
+                .During(GameState.Intro,
+                  DisplayReadyText,
+                    () => _tick.AtEvent(() => _stateMachine.ChangeState(GameState.StartOfLife))
+                );
 
-            if (_stateMachine.OnEntry(GameState.StartOfLife))
-            {
-                _lives--;
-            }
+            _stateMachine.OnEntry(GameState.StartOfLife, () => _lives--);
 
-            if (_stateMachine.OnEntry(GameState.NewLevel))
-            {
-                StartLevel();
-            }
+            _stateMachine.OnEntry(GameState.NewLevel, StartLevel);
 
-            if (_stateMachine.During(GameState.StartOfLife, GameState.NewLevel))
-            {
-                _stateMachine.ChangeState(GameState.GetReady);
-            }
+            _stateMachine.During(new [] {GameState.StartOfLife, GameState.NewLevel}, 
+                () => _stateMachine.ChangeState(GameState.GetReady));
+
+            _stateMachine.OnEntry(GameState.GetReady,
+                () => _tick.NextEventAfter(120),
+                ResetGhostsAndPacMan);
+
+            //if (_stateMachine.OnEntry(GameState.Intro))
+            //{
+            //    _tick.NextEventAfter(120);
+            //    StartLevel();
+            //}
+            //if(_stateMachine.During(GameState.Intro))
+            //{
+            //    _display.WriteLine("PLAYER ONE", TextColour.Cyan, 9, 14);
+            //    _display.WriteLine("READY!", TextColour.Yellow, 11, 20);
+            //    if (_tick.IsAtEvent)
+            //        _stateMachine.ChangeState(GameState.StartOfLife);
+            //}
+
+            //if (_stateMachine.OnEntry(GameState.StartOfLife))
+            //{
+            //    _lives--;
+            //}
+
+            //if (_stateMachine.OnEntry(GameState.NewLevel))
+            //{
+            //    StartLevel();
+            //}
+
+            //if (_stateMachine.During(GameState.StartOfLife, GameState.NewLevel))
+            //{
+            //    _stateMachine.ChangeState(GameState.GetReady);
+            //}
             
-            if (_stateMachine.OnEntry(GameState.GetReady))
-            {
-                _tick.NextEventAfter(120);
-                ResetGhostsAndPacMan();
-            }
+            //if (_stateMachine.OnEntry(GameState.GetReady))
+            //{
+            //    _tick.NextEventAfter(120);
+            //    ResetGhostsAndPacMan();
+            //}
 
-            if (_stateMachine.During(GameState.GetReady))
-            {
-                _display.WriteLine("          ", TextColour.Cyan, 9, 14);
-                _display.WriteLine("      ", TextColour.Yellow, 11, 20);
-                if (_tick.IsAtEvent)
-                    _stateMachine.ChangeState(GameState.Playing);
-            }
+            _stateMachine.During(GameState.GetReady,
+                ClearReadyText,
+                () => _tick.AtEvent(() => _stateMachine.ChangeState(GameState.Playing)));
 
-            if(_stateMachine.OnEntry(GameState.Playing))
-            {
-                _scatterChase.Reset(_level);
-                _speeds.SetLevel(_level);
-            }
+            //if (_stateMachine.During(GameState.GetReady))
+            //{
+            //    _display.WriteLine("          ", TextColour.Cyan, 9, 14);
+            //    _display.WriteLine("      ", TextColour.Yellow, 11, 20);
+            //    if (_tick.IsAtEvent)
+            //        _stateMachine.ChangeState(GameState.Playing);
+            //}
 
-            if (_stateMachine.During(GameState.Playing, GameState.Frightened))
-            {
-                _ghostHouse.Tick();
-                _ghostHouse.SetActiveGhost(Ghosts);
+            _stateMachine.OnEntry(GameState.Playing,
+                () => _scatterChase.Reset(_level),
+                () => _speeds.SetLevel(_level)
+            );
 
-                if (_stateMachine.During(GameState.Playing))
-                {
-                    if (_scatterChase.Tick())
+            //if (_stateMachine.OnEntry(GameState.Playing))
+            //{
+            //    _scatterChase.Reset(_level);
+            //    _speeds.SetLevel(_level);
+            //}
+
+            _stateMachine.During(new[] {GameState.Playing, GameState.Frightened},
+                MainLoop);
+
+            _stateMachine.OnEntry(GameState.Complete,
+                () => _tick.NextEventAfter(120));
+            //if (_stateMachine.OnEntry(GameState.Complete))
+            //{
+            //    _tick.NextEventAfter(120);
+            //}
+
+            _stateMachine.During(GameState.Complete,
+                () => _tick.AtEvent(() => _stateMachine.ChangeState(GameState.Flash)));
+
+            //if (_stateMachine.During(GameState.Complete))
+            //{
+            //    if (_tick.IsAtEvent)
+            //    {
+            //        _stateMachine.ChangeState(GameState.Flash);
+            //    }
+            //}
+
+            //if (_stateMachine.OnEntry(GameState.Flash))
+            //{
+            //    _tick.NextEventAfter(12);
+            //    _flashCounter = 0;
+            //}
+
+            //if(_stateMachine.During(GameState.Flash))
+            //{
+            //    if (_tick.IsAtEvent)
+            //    {
+            //        _flashCounter = _flashCounter + 1;
+            //        if (_flashCounter < 9)
+            //        {
+            //            DrawMap(_flashCounter % 2 == 1);
+            //            _tick.NextEventAfter(12);
+            //        }
+            //        else
+            //        {
+            //            _display.Blank();
+            //            _tick.NextEventAfter(20);
+            //        }
+
+            //        if (_flashCounter > 9)
+            //        {
+            //            _level++;
+            //            _stateMachine.ChangeState(GameState.NewLevel);
+            //        }
+            //    }
+            //}
+
+            _stateMachine
+                .OnEntry(GameState.Flash,
+                    () => _tick.NextEventAfter(12),
+                    () => { _flashCounter = 0; })
+                .During(GameState.Flash,
+                    FlashMap);
+
+            //if (_stateMachine.OnEntry(GameState.Caught))
+            //{
+            //    _tick.NextEventAfter(60);
+            //}
+
+            //if(_stateMachine.During(GameState.Caught))
+            //{
+            //    if (_tick.IsAtEvent)
+            //    {
+            //        _stateMachine.ChangeState(GameState.Dying);
+            //        _pacMan.Die();
+            //    }
+            //    _powerPillAnimation.Tick();
+            //    foreach (var ghost in Ghosts)
+            //        ghost.Animation.Tick();
+            //}
+
+            _stateMachine
+                .OnEntry(GameState.Caught,
+                    () => _tick.NextEventAfter(60))
+                .During(GameState.Caught,
+                    () => _tick.AtEvent(() =>
                     {
-                        SwitchChaseMode();
+                        _stateMachine.ChangeState(GameState.Dying);
+                        _pacMan.Die();
+                    }),
+                    () =>
+                    {
+                        _powerPillAnimation.Tick();
+                        DoToGhosts(g=>g.Animate());
                     }
-                }
+                );
 
-                _powerPillAnimation.Tick();
-
-                if (_ghostEatenPause > 0)
-                {
-                    _ghostEatenPause--;
-                    if (_ghostEatenPause == 0)
+            _stateMachine
+                .OnEntry(GameState.Dying,
+                    () => _tick.NextEventAfter(4*60))
+                .During(GameState.Dying,
+                    () => _pacMan.Animation.Tick(),
+                    () => _tick.AtEvent(() =>
                     {
-                        foreach (var ghost in Ghosts.Where(g => g.State == GhostState.Eaten))
-                            ghost.SetEyes();
-                    }
-
-                    MoveGhosts(true);
-                }
-                else
-                {
-                    foreach (var ghost in Ghosts)
-                    {
-                        ghost.Animate();
-                    }
-
-                    if (CheckPacManPill())
-                    {
-                        _pacManPause = 1;
-                        _ghostHouse.PillEaten();
-                    }
-
-                    _bonusFruit.Tick(_pillCount);
-                    
-                    MoveGhosts(false);
-
-                    if (CheckPacManPowerPill())
-                    {
-                        _pacManPause = 3;
-                        _ghostHouse.PillEaten();
-                        foreach (var ghost in Ghosts)
+                        if (_lives > 0)
                         {
-                            // Halved timer hack as moving every other tick
-                            ghost.SetFrightened(_speeds.FrightenedFlashTime);
+                            _stateMachine.ChangeState(GameState.StartOfLife);
+                            ResetGhostsAndPacMan();
+                            _ghostHouse.LifeLost();
                         }
-
-                        _stateMachine.ChangeState(GameState.Frightened);
-                    }
-
-                    if (_pacManPause == 0)
-                    {
-                        _pacManSpeed.SetSpeed(_stateMachine.During(GameState.Frightened) 
-                            ? _speeds.PacManFrightenedSpeed 
-                            : _speeds.PacManSpeed);
-                        _pacManSpeed.Tick();
-                        MovePacMan(true);
-                        if (_pacManSpeed.ExtraFrame)
+                        else
                         {
-                            MovePacMan(false);
+                            _stateMachine.ChangeState(GameState.GameOver);
                         }
-                    }
-                    else
-                    {
-                        _pacManPause--;
-                    }
+                    }));
 
+            //if (_stateMachine.OnEntry(GameState.Dying))
+            //{
+            //    _tick.NextEventAfter(4 * 60);
+            //}
 
-                    if (_bonusFruit.ShowAsFruit)
-                    {
-                        CheckPacManFruit();
-                    }
+            //if(_stateMachine.During(GameState.Dying))
+            //{
+            //    _pacMan.Animation.Tick();
+            //    if (_tick.IsAtEvent)
+            //    {
+            //        if (_lives > 0)
+            //        {
+            //            _stateMachine.ChangeState(GameState.StartOfLife);
+            //            ResetGhostsAndPacMan();
+            //            _ghostHouse.LifeLost();
+            //        }
+            //        else
+            //        {
+            //            _stateMachine.ChangeState(GameState.GameOver);
+            //        }
+            //    }
+            //}
 
-                    if (_stateMachine.OnTrigger(GameState.Frightened))
-                    {
-                        _tick.NextEventAfter(_speeds.FrightenedTime);
-                        _ghostEatenPoints = 0;
-                    }
+            _stateMachine
+                .OnEntry(GameState.GameOver,
+                    () => _tick.NextEventAfter(4 * 60))
+                .During(GameState.GameOver,
+                    () => _tick.AtEvent(() => { _stateMachine.End(); }));
 
-                    if (_stateMachine.During(GameState.Frightened))
-                    {
-                        if (_tick.IsAtEvent)
-                        {
-                            _stateMachine.ChangeState(GameState.Playing);
-                        }
-                    }
+            //if (_stateMachine.OnEntry(GameState.GameOver))
+            //{
+            //    _tick.NextEventAfter(4*60);
+            //}
 
-                    if (_stateMachine.OnExit(GameState.Frightened))
-                    {
-                        foreach (var ghost in Ghosts.Where(g => g.Frightened))
-                        {
-                            ghost.SetNotFrightened();
-                        }
-                    }
-
-                    foreach (var ghost in Ghosts)
-                    {
-                        if (_pacMan.Location.IsNearTo(ghost.Location))
-                        {
-                            if (ghost.Frightened)
-                            {
-                                ghost.SetEaten(_ghostEatenPoints);
-                                _ghostEatenPause = 60;
-                                _ghostEatenPoints++;
-                                if (!_demoMode)
-                                {
-                                    _score += _ghostEatenPoints switch
-                                    {
-                                        PointsMultiplier.Pts200 => 200,
-                                        PointsMultiplier.Pts400 => 400,
-                                        PointsMultiplier.Pts800 => 800,
-                                        PointsMultiplier.Pts1600 => 1600,
-                                        _ => 0
-                                    };
-                                }
-                            }
-                            else if (!_invincible && ghost.State == GhostState.Alive)
-                            {
-                                _stateMachine.ChangeState(GameState.Caught);
-                            }
-                        }
-                    }
-                }
-
-                if (_pillCount == _map.Pills)
-                {
-                    _stateMachine.ChangeState(GameState.Complete);
-                }
-            }
-
-            if (_stateMachine.OnEntry(GameState.Complete))
-            {
-                _tick.NextEventAfter(120);
-            }
-
-            if (_stateMachine.During(GameState.Complete))
-            {
-                if (_tick.IsAtEvent)
-                {
-                    _stateMachine.ChangeState(GameState.Flash);
-                }
-            }
-
-            if (_stateMachine.OnEntry(GameState.Flash))
-            {
-                _tick.NextEventAfter(12);
-                _flashCounter = 0;
-            }
-
-            if(_stateMachine.During(GameState.Flash))
-            {
-                if (_tick.IsAtEvent)
-                {
-                    _flashCounter = _flashCounter + 1;
-                    if (_flashCounter < 9)
-                    {
-                        DrawMap(_flashCounter % 2 == 1);
-                        _tick.NextEventAfter(12);
-                    }
-                    else
-                    {
-                        _display.Blank();
-                        _tick.NextEventAfter(20);
-                    }
-
-                    if (_flashCounter > 9)
-                    {
-                        _level++;
-                        _stateMachine.ChangeState(GameState.NewLevel);
-                    }
-                }
-            }
-
-            if (_stateMachine.OnEntry(GameState.Caught))
-            {
-                _tick.NextEventAfter(60);
-            }
-
-            if(_stateMachine.During(GameState.Caught))
-            {
-                if (_tick.IsAtEvent)
-                {
-                    _stateMachine.ChangeState(GameState.Dying);
-                    _pacMan.Die();
-                }
-                _powerPillAnimation.Tick();
-                foreach (var ghost in Ghosts)
-                    ghost.Animation.Tick();
-            }
-
-            if (_stateMachine.OnEntry(GameState.Dying))
-            {
-                _tick.NextEventAfter(4 * 60);
-            }
-
-            if(_stateMachine.During(GameState.Dying))
-            {
-                _pacMan.Animation.Tick();
-                if (_tick.IsAtEvent)
-                {
-                    if (_lives > 0)
-                    {
-                        _stateMachine.ChangeState(GameState.StartOfLife);
-                        ResetGhostsAndPacMan();
-                        _ghostHouse.LifeLost();
-                    }
-                    else
-                    {
-                        _stateMachine.ChangeState(GameState.GameOver);
-                    }
-                }
-            }
-
-            if (_stateMachine.OnEntry(GameState.GameOver))
-            {
-                _tick.NextEventAfter(4*60);
-            }
-
-            if (_stateMachine.During(GameState.GameOver))
-            {
-                if (_tick.IsAtEvent)
-                    return false;
-            }
+            //if (_stateMachine.During(GameState.GameOver))
+            //{
+            //    if (_tick.IsAtEvent)
+            //        return false;
+            //}
 
             DrawScore();
             DrawSprites();
 
-            return true;
+            return !_stateMachine.HasEnded;
         }
 
-        private void SwitchChaseMode()
+        private void MainLoop()
+        {
+            _ghostHouse.Tick();
+            _ghostHouse.SetActiveGhost(Ghosts);
+
+            _stateMachine.During(GameState.Playing, CheckAndSwitchChaseMode);
+
+            //if (_stateMachine.During(GameState.Playing))
+            //{
+            //    if (_scatterChase.Tick())
+            //    {
+            //        SwitchChaseMode();
+            //    }
+            //}
+
+            _powerPillAnimation.Tick();
+
+            if (_ghostEatenPause > 0)
+            {
+                _ghostEatenPause--;
+                if (_ghostEatenPause == 0)
+                {
+                    foreach (var ghost in Ghosts.Where(g => g.State == GhostState.Eaten))
+                        ghost.SetEyes();
+                }
+
+                MoveGhosts(true);
+            }
+            else
+            {
+                DoToGhosts(g => g.Animate());
+                //foreach (var ghost in Ghosts)
+                //{
+                //    ghost.Animate();
+                //}
+
+                if (CheckPacManPill())
+                {
+                    _pacManPause = 1;
+                    _ghostHouse.PillEaten();
+                }
+
+                _bonusFruit.Tick(_pillCount);
+
+                MoveGhosts(false);
+
+                if (CheckPacManPowerPill())
+                {
+                    _pacManPause = 3;
+                    _ghostHouse.PillEaten();
+                    DoToGhosts(g => g.SetFrightened(_speeds.FrightenedFlashTime));
+                    //foreach (var ghost in Ghosts)
+                    //{
+                    //    // Halved timer hack as moving every other tick
+                    //    ghost.SetFrightened(_speeds.FrightenedFlashTime);
+                    //}
+
+                    _stateMachine.ChangeState(GameState.Frightened);
+                }
+
+                if (_pacManPause == 0)
+                {
+                    _pacManSpeed.SetSpeed(_stateMachine.IsCurrent(GameState.Frightened)
+                        ? _speeds.PacManFrightenedSpeed
+                        : _speeds.PacManSpeed);
+                    _pacManSpeed.Tick();
+                    MovePacMan(true);
+                    if (_pacManSpeed.ExtraFrame)
+                    {
+                        MovePacMan(false);
+                    }
+                }
+                else
+                {
+                    _pacManPause--;
+                }
+
+
+                if (_bonusFruit.ShowAsFruit)
+                {
+                    CheckPacManFruit();
+                }
+
+                _stateMachine
+                    .OnTrigger(GameState.Frightened,
+                        () => _tick.NextEventAfter(_speeds.FrightenedTime),
+                        () => { _ghostEatenPoints = 0; })
+                    .During(GameState.Frightened,
+                        () => _tick.AtEvent(() => _stateMachine.ChangeState(GameState.Playing)))
+                    .OnExit(GameState.Frightened,
+                        () =>
+                        {
+                            foreach (var ghost in Ghosts.Where(g => g.Frightened))
+                            {
+                                ghost.SetNotFrightened();
+                            }
+                        });
+                //if (_stateMachine.OnTrigger(GameState.Frightened))
+                //{
+                //    _tick.NextEventAfter(_speeds.FrightenedTime);
+                //    _ghostEatenPoints = 0;
+                //}
+
+                //if (_stateMachine.During(GameState.Frightened))
+                //{
+                //    if (_tick.IsAtEvent)
+                //    {
+                //        _stateMachine.ChangeState(GameState.Playing);
+                //    }
+                //}
+
+                //if (_stateMachine.OnExit(GameState.Frightened))
+                //{
+                //    foreach (var ghost in Ghosts.Where(g => g.Frightened))
+                //    {
+                //        ghost.SetNotFrightened();
+                //    }
+                //}
+
+                foreach (var ghost in Ghosts)
+                {
+                    if (_pacMan.Location.IsNearTo(ghost.Location))
+                    {
+                        if (ghost.Frightened)
+                        {
+                            ghost.SetEaten(_ghostEatenPoints);
+                            _ghostEatenPause = 60;
+                            _ghostEatenPoints++;
+                            if (!_demoMode)
+                            {
+                                _score += _ghostEatenPoints switch
+                                {
+                                    PointsMultiplier.Pts200 => 200,
+                                    PointsMultiplier.Pts400 => 400,
+                                    PointsMultiplier.Pts800 => 800,
+                                    PointsMultiplier.Pts1600 => 1600,
+                                    _ => 0
+                                };
+                            }
+                        }
+                        else if (!_invincible && ghost.State == GhostState.Alive)
+                        {
+                            _stateMachine.ChangeState(GameState.Caught);
+                        }
+                    }
+                }
+            }
+
+            if (_pillCount == _map.Pills)
+            {
+                _stateMachine.ChangeState(GameState.Complete);
+            }
+        }
+
+        private void FlashMap()
+        {
+            _flashCounter = _flashCounter + 1;
+            if (_flashCounter < 9)
+            {
+                DrawMap(_flashCounter % 2 == 1);
+                _tick.NextEventAfter(12);
+            }
+            else
+            {
+                _display.Blank();
+                _tick.NextEventAfter(20);
+            }
+
+            if (_flashCounter > 9)
+            {
+                _level++;
+                _stateMachine.ChangeState(GameState.NewLevel);
+            }
+        }
+
+        private void CheckAndSwitchChaseMode()
+        {
+            if (_scatterChase.Tick())
+            {
+                DoToGhosts(g=> g.FlipDirection());
+            }
+        }
+
+        private void DoToGhosts(Action<Ghost> action)
         {
             foreach (var ghost in Ghosts)
-            {
-                ghost.FlipDirection();
-            }
+                action(ghost);
         }
 
         private bool SkipMove(int skipTickEvery) => _tick.IsTickStepZero(skipTickEvery);
@@ -464,7 +607,7 @@ namespace PacManArcadeGame.GameItems
                     MoveGhost(ghost);
                     MoveGhost(ghost);
                 }
-                if (!onlyEyes)
+                else if (!onlyEyes)
                 {
                     ghost.SpeedCounter.Tick();
                     if (_map.Cell(ghost.Location).CellType == CellType.Tunnel)
@@ -765,7 +908,7 @@ namespace PacManArcadeGame.GameItems
             _scoreBoard.HighScore(_uiSystem.GetAndUpdateHighScore(_score));
 
 
-            if (_stateMachine.During(GameState.GameOver) || _demoMode)
+            if (_stateMachine.IsCurrent(GameState.GameOver) || _demoMode)
             {
                 _scoreBoard.Credits(_uiSystem.Credits);
                 _display.WriteLine("GAME  OVER", TextColour.Red, 9, 20);
@@ -805,7 +948,7 @@ namespace PacManArcadeGame.GameItems
                 }
             }
             
-            if (_stateMachine.During(GameState.Intro, GameState.GetReady)
+            if (_stateMachine.IsCurrent(GameState.Intro, GameState.GetReady)
                                                        || _powerPillAnimation.IsZero)
             {
                 foreach (var power in _map.PowerPills)
@@ -814,21 +957,32 @@ namespace PacManArcadeGame.GameItems
                 }
             }
 
-            if (_stateMachine.NotDuring(GameState.Intro, GameState.GameOver)
+            if (!_stateMachine.IsCurrent(GameState.Intro, GameState.GameOver)
                                                           && _ghostEatenPause == 0
                                                           && (!_invincible || _invincibleAnimation.IsZero))
             {
                 DrawBoardSprite(_spriteSet.PacMan(_pacMan), _pacMan.Location);
             }
 
-            if (_stateMachine.During(GameState.GetReady, GameState.Playing,
-                GameState.Frightened, GameState.Caught))
-            {
-                foreach (var ghost in Ghosts)
+            _stateMachine.During(new[]
                 {
-                    DrawBoardSprite(_spriteSet.Ghost(ghost), ghost.Location);
-                }
-            }
+                    GameState.GetReady, GameState.Playing, GameState.Frightened, GameState.Caught
+                },
+                () =>
+                {
+                    foreach (var ghost in Ghosts)
+                    {
+                        DrawBoardSprite(_spriteSet.Ghost(ghost), ghost.Location);
+                    }
+                });
+            //if (_stateMachine.During(GameState.GetReady, GameState.Playing,
+            //    GameState.Frightened, GameState.Caught))
+            //{
+            //    foreach (var ghost in Ghosts)
+            //    {
+            //        DrawBoardSprite(_spriteSet.Ghost(ghost), ghost.Location);
+            //    }
+            //}
         }
 
         private void DrawScreenSprite(SpriteSource sprite, Location location)

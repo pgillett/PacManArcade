@@ -1,4 +1,6 @@
-﻿namespace PacManArcadeGame.Helpers
+﻿using System;
+
+namespace PacManArcadeGame.Helpers
 {
     public class TickCounter
     {
@@ -21,6 +23,11 @@
         }
 
         public bool IsAtEvent => _counter > _next;
+
+        public void AtEvent(Action action)
+        {
+            if (IsAtEvent) action();
+        }
 
         public bool IsWithinNext(int ticks) => _counter + ticks > _next;
 

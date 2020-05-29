@@ -15,6 +15,7 @@ namespace PacManArcadeGame.Helpers
         private bool _leaving;
         private bool _triggered;
         private bool _changed;
+        private bool _finalise;
 
         public StateMachine(T state)
         {
@@ -47,39 +48,59 @@ namespace PacManArcadeGame.Helpers
             _changed = true;
         }
 
-        public bool OnEntry(T state)
+        private StateMachine<T> Execute(Func<bool> condition, params Action[] actions)
         {
-            return Current.Equals(state) && _entering;
+            if (condition())
+            {
+                foreach (var action in actions)
+                    action();
+            }
+
+            return this;
         }
 
-        public bool OnTrigger(T state)
+        public StateMachine<T> OnEntry(T state, params Action[] actions)
         {
-            return Current.Equals(state) && _triggered;
+            return Execute(()=>Current.Equals(state) && _entering, actions);
         }
 
-        public bool During(T state)
+        public StateMachine<T> OnTrigger(T state, params Action[] actions)
         {
-            return Current.Equals(state);
+            return Execute(() => Current.Equals(state) && _triggered, actions);
         }
 
-        public bool During(params T[] states)
+        public StateMachine<T> During(T state, params Action[] actions)
         {
-            return states.Contains(Current);
+            return Execute(() => Current.Equals(state), actions);
         }
 
-        public bool NotDuring(T states)
+        public StateMachine<T> During(IEnumerable<T> states, params Action[] actions)
         {
-            return !states.Equals(Current);
+            return Execute(() =>states.Contains(Current), actions);
         }
 
-        public bool NotDuring(params T[] states)
+        public StateMachine<T> NotDuring(T states, params Action[] actions)
         {
-            return !states.Contains(Current);
+            return Execute(() => !states.Equals(Current), actions);
         }
 
-        public bool OnExit(T state)
+        public StateMachine<T> NotDuring(T state1, T state2, params Action[] actions)
         {
-            return Current.Equals(state) && _leaving;
+            return Execute(() => !Current.Equals(state1) && !Current.Equals(state2), actions);
         }
+
+        public StateMachine<T> OnExit(T state, params Action[] actions)
+        {
+            return Execute(() => Current.Equals(state) && _leaving, actions);
+        }
+
+        public bool IsCurrent(params T[] states) => states.Contains(Current);
+
+        public void End()
+        {
+            _finalise = true;
+        }
+
+        public bool HasEnded => _finalise;
     }
 }
