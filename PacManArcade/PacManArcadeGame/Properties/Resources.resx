@@ -119,6 +119,30 @@
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="Board" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Board.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+    <value>..\Resources\Board.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="gfx" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\gfx.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="pacman_beginning" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\pacman_beginning.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="pacman_chomp" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\pacman_chomp.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="pacman_death" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\pacman_death.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="pacman_eatfruit" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\pacman_eatfruit.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="pacman_eatghost" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\pacman_eatghost.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="pacman_extrapac" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\pacman_extrapac.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="pacman_intermission" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\pacman_intermission.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>

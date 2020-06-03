@@ -22,21 +22,28 @@
     var backcanvas;
     var backctx;
     var skip = 0;
-
-    function SetupCanvas(cv, sp) {
+    var sounds = [];
+    
+    function Setup(cv, sm, sp) {
         canvas = cv;
-        
-       
-        sprites = sp;
-//        alert("canvas: " + cv + " sprites:" + sp);
-
-
+        sprites = document.createElement('img');
+        sprites.src = "data:image/png;base64," + sp;
     }
 
     function Sprite(ctx, fx, fy, fs, tx, ty) {
         ctx.drawImage(sprites, fx, fy, fs, fs, tx, ty, fs, fs);
     }
-    
+
+    function SoundSet(num, data) {
+        sounds[num] = new window.Audio();
+        sounds[num].src = "data:audio/wav;base64," + data;
+    }
+
+    function PlaySound(num) {
+        sounds[num].currentTime = 0;
+        sounds[num].play();
+    }
+
     function SpriteSet(width, height, parms) {
         try {
             if (tc == 0) {

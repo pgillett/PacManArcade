@@ -3,12 +3,10 @@
 @using PacManArcadeGame.GameItems
 @using PacManArcadeGame.Graphics
 @using PacManArcadeGame.Helpers
+@using System.IO
 @inject IJSRuntime jsRuntime
 
 <canvas tabindex="0" @ref="_canvas" style="height: 100%; width: 100%;" @onkeydown="KeyPressed"></canvas>
-<img @ref="_spriteMap" src="gfx.png" hidden />
-
-
 
 @code
 {
@@ -33,9 +31,16 @@
     {
         if (_uiSystem != null) return;
 
-        await jsRuntime.InvokeVoidAsync("SetupCanvas", _canvas, _spriteMap);
+        await jsRuntime.InvokeVoidAsync("Setup", _canvas, _spriteMap,
+            Convert.ToBase64String(PacManArcadeGame.Properties.Resources.gfx));
+        
+ //       await jsRuntime.InvokeVoidAsync("SoundSet", 0,
+ //           ConvertSoundResource(PacManArcadeGame.Properties.Resources.pacman_beginning));
+
         _boardRenderer = new BoardRenderer(jsRuntime);
         _uiSystem = new UiSystem(_boardRenderer);
+
+//        await jsRuntime.InvokeVoidAsync("PlaySound", 0);
 
         var timer = new DateTime().AddSeconds(0.5);
         while (true)
@@ -50,6 +55,17 @@
     }
 
     private int frameSkip = 0;
+
+    private string ConvertSoundResource(UnmanagedMemoryStream ums)
+    {
+        byte[] bytes;
+        using (var ms = new MemoryStream())
+        {
+            ums.CopyTo(ms);
+            bytes = ms.ToArray();
+        }
+        return Convert.ToBase64String(bytes);
+    }
 
     protected async Task Tick()
     {
@@ -84,34 +100,34 @@
                 break;
             case "C":
             case "c":
-                _inputs.Coin = true;
+                _inputs.Coin.Press();
                 break;
             case "1":
-                _inputs.Player1Start = true;
+                _inputs.Player1Start.Press();
                 break;
             case "R":
             case "r":
-                _inputs.Reset = true;
+                _inputs.Reset.Press();
                 break;
             case "P":
             case "p":
-                _inputs.Pause = true;
+                _inputs.Pause.Press();
                 break;
             case "T":
             case "t":
-                _inputs.Tick = true;
+                _inputs.Tick.Press();
                 break;
             case "I":
             case "i":
-                _inputs.Invincible = true;
+                _inputs.Invincible.Press();
                 break;
             case "F":
             case "f":
-                _inputs.FastForward = true;
+                _inputs.FastForward.Press();
                 break;
             case "L":
             case "l":
-                _inputs.LevelSkip = true;
+                _inputs.LevelSkip.Press();
                 break;
         }
     }

@@ -46,37 +46,25 @@ namespace PacManArcadeGame.UiStates
 
         public void Tick()
         {
-            if (Inputs.Coin)
-            {
-                Credits++;
-                Inputs.Coin = false;
-            }
+            Inputs.Coin.On(() => Credits++);
 
-            if (Inputs.Reset)
+            Inputs.Reset.On(() =>
             {
                 _uiMode = new TestMode(this);
                 Credits = 0;
-                Inputs.Reset = false;
-            }
+            });
 
-            if (Inputs.Pause)
-            {
-                Inputs.Pause = false;
-                _paused = !_paused;
-            }
+            Inputs.Pause.On(() => _paused = !_paused);
 
-            if (!_paused || Inputs.Tick)
+            if (!_paused || Inputs.Tick.WasPressed)
             {
                 Display.ClearSprites();
 
-                Inputs.Tick = false;
-
-                if (Inputs.FastForward)
+                Inputs.FastForward.On(() =>
                 {
-                    Inputs.FastForward = false;
                     for (int i = 0; i < 7; i++)
                         _uiMode.Tick();
-                }
+                });
 
                 var alive = _uiMode.Tick();
 
@@ -107,12 +95,11 @@ namespace PacManArcadeGame.UiStates
                     }
                     case CoinsInMode _:
                     {
-                        if (Inputs.Player1Start)
+                        Inputs.Player1Start.On(() =>
                         {
                             Credits--;
-                            Inputs.Player1Start = false;
                             _uiMode = new PlayMode(this, _levelSetup);
-                        }
+                        });
 
                         break;
                     }

@@ -10,10 +10,4 @@
     <ProjectReference Include="..\PacManArcadeGame\PacManArcadeGame.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="gfx.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

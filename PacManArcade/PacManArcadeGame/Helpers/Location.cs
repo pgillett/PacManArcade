@@ -30,14 +30,7 @@ namespace PacManArcadeGame.Helpers
             }
         }
 
-        public Location Move(Direction direction) =>
-            direction switch
-            {
-                Direction.Up => new Location(X, Y - 1),
-                Direction.Down => new Location(X, Y + 1),
-                Direction.Left => new Location(X - 1, Y),
-                _ => new Location(X + 1, Y)
-            };
+        public Location Move(Direction direction) => Add(direction.Dx(), direction.Dy());
 
         public int DistanceTo(Location target)
         {

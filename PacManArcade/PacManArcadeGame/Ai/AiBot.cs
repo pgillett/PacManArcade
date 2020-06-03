@@ -22,20 +22,7 @@ namespace PacManArcadeGame.Ai
 
         public Direction BestMove(Location location, Direction currentDirection, IEnumerable<Ghost> ghosts)
         {
-            // Don't change direction if still of the same cell
-
-            if (_lastX == location.CellX && _lastY == location.CellY)
-                return _last;
-
-            if (_counter > 0)
-            {
-                _counter--;
-                return _last;
-            }
-
-            // Don't change direction for 3 ticks
-
-            _counter = 2;
+            if (!location.CloseToCell) return currentDirection;
 
             _lastX = location.CellX;
             _lastY = location.CellY;
@@ -67,21 +54,22 @@ namespace PacManArcadeGame.Ai
             var moves = new List<Direction>();
 
             var pacMan = _aiMap.Cell(location.CellX, location.CellY);
-            if (pacMan.Above.PlayArea)
-                moves.Add(Direction.Up);
-            if (pacMan.Below.PlayArea)
-                moves.Add(Direction.Down);
-            if (pacMan.Left.PlayArea )
-                moves.Add(Direction.Left);
-            if (pacMan.Right.PlayArea)
-                moves.Add(Direction.Right);
 
-            //if (moves.Count > 1)
-            //    moves.Remove(currentDirection.Opposite());
+            moves = new[] {Direction.Up, Direction.Down, Direction.Left, Direction.Right}
+                .Where(d => pacMan.CellInDirection(d).IsPlayArea)
+                .ToList();
 
-            // Work out which direction the pill is in
+            if (moves.Count > 1 && _counter > 0)
+            {
+                // Don't swap back on self if moved recently
 
-            var pillDirection = _aiMap.WorkBackTo(cell.X, cell.Y, x, y);
+                _counter--;
+                moves.Remove(currentDirection.Opposite());
+            }
+
+            // Work out which direction the pill/firghtened ghost is in
+
+            var idealDirection = _aiMap.WorkBackTo(cell.X, cell.Y, x, y);
 
             // Get the distances of each alive ghost
 
@@ -91,27 +79,36 @@ namespace PacManArcadeGame.Ai
             
             // Avoid the direction of the ghost
 
-            foreach (var ghostDistance in ghostDistances.Where(g=>g.Distance<8f))
+            foreach (var ghostDistance in ghostDistances.Where(g=>g.Distance<11))
             {
-                var ghostDirection = _aiMap.WorkBackTo(ghostDistance.Ghost.Location.CellX, ghostDistance.Ghost.Location.CellY, x, y);
-                if (moves.Contains(ghostDirection) && moves.Count > 1)
+                var nextTarget = ghostDistance.Ghost.NextTarget;
+                var nextDistance = _aiMap.Cell(nextTarget.CellX, nextTarget.CellY).Distance;
+
+                // Check if ghost is moving closer or is very close
+
+                if (nextDistance < ghostDistance.Distance || ghostDistance.Distance < 11)
                 {
-                    moves.Remove(ghostDirection);
+                    var ghostDirection = _aiMap.WorkBackTo(ghostDistance.Ghost.Location.CellX,
+                        ghostDistance.Ghost.Location.CellY, x, y);
+                    if (moves.Contains(ghostDirection) && moves.Count > 1)
+                    {
+                        moves.Remove(ghostDirection);
+                    }
                 }
             }
 
             // Go in direction of pill if safe
 
-            if (moves.Contains(pillDirection))
-            {
-                _last = pillDirection;
-                return pillDirection;
-            }
+            var bestDirection = moves.Contains(idealDirection) ? idealDirection : moves[0];
             
-            // Otherwise go in safe direction
+            if (bestDirection != _last)
+            {
+                _counter = 4;
+            }
 
-            _last = moves[0];
-            return moves[0];
+            _last = bestDirection;
+
+            return bestDirection;
         }
 
         /// <summary>

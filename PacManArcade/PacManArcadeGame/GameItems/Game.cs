@@ -162,17 +162,9 @@ namespace PacManArcadeGame.GameItems
             _scoreAnimation.Tick();
             _invincibleAnimation.Tick();
 
-            if (Inputs.Invincible && !_demoMode)
-            {
-                _invincible = !_invincible;
-                Inputs.Invincible = false;
-            }
+            Inputs.Invincible.On(() => _invincible = !_invincible);
 
-            if (Inputs.LevelSkip)
-            {
-                _stateMachine.ChangeState(GameState.Complete);
-                Inputs.LevelSkip = false;
-            }
+            Inputs.LevelSkip.On(()=> _stateMachine.ChangeState(GameState.Complete));
 
             _stateMachine
                 .OnEntry(GameState.Intro,
@@ -194,137 +186,27 @@ namespace PacManArcadeGame.GameItems
                 () => _tick.NextEventAfter(120),
                 ResetGhostsAndPacMan);
 
-            //if (_stateMachine.OnEntry(GameState.Intro))
-            //{
-            //    _tick.NextEventAfter(120);
-            //    StartLevel();
-            //}
-            //if(_stateMachine.During(GameState.Intro))
-            //{
-            //    _display.WriteLine("PLAYER ONE", TextColour.Cyan, 9, 14);
-            //    _display.WriteLine("READY!", TextColour.Yellow, 11, 20);
-            //    if (_tick.IsAtEvent)
-            //        _stateMachine.ChangeState(GameState.StartOfLife);
-            //}
-
-            //if (_stateMachine.OnEntry(GameState.StartOfLife))
-            //{
-            //    _lives--;
-            //}
-
-            //if (_stateMachine.OnEntry(GameState.NewLevel))
-            //{
-            //    StartLevel();
-            //}
-
-            //if (_stateMachine.During(GameState.StartOfLife, GameState.NewLevel))
-            //{
-            //    _stateMachine.ChangeState(GameState.GetReady);
-            //}
-            
-            //if (_stateMachine.OnEntry(GameState.GetReady))
-            //{
-            //    _tick.NextEventAfter(120);
-            //    ResetGhostsAndPacMan();
-            //}
-
             _stateMachine.During(GameState.GetReady,
                 ClearReadyText,
-                () => _tick.AtEvent(() => _stateMachine.ChangeState(GameState.Playing)));
-
-            //if (_stateMachine.During(GameState.GetReady))
-            //{
-            //    _display.WriteLine("          ", TextColour.Cyan, 9, 14);
-            //    _display.WriteLine("      ", TextColour.Yellow, 11, 20);
-            //    if (_tick.IsAtEvent)
-            //        _stateMachine.ChangeState(GameState.Playing);
-            //}
-
-            _stateMachine.OnEntry(GameState.Playing,
+                () => _tick.AtEvent(() => _stateMachine.ChangeState(GameState.Playing)),
                 () => _scatterChase.Reset(_level),
-                () => _speeds.SetLevel(_level)
-            );
-
-            //if (_stateMachine.OnEntry(GameState.Playing))
-            //{
-            //    _scatterChase.Reset(_level);
-            //    _speeds.SetLevel(_level);
-            //}
+                () => _speeds.SetLevel(_level));
 
             _stateMachine.During(new[] {GameState.Playing, GameState.Frightened},
                 MainLoop);
 
             _stateMachine.OnEntry(GameState.Complete,
                 () => _tick.NextEventAfter(120));
-            //if (_stateMachine.OnEntry(GameState.Complete))
-            //{
-            //    _tick.NextEventAfter(120);
-            //}
 
             _stateMachine.During(GameState.Complete,
                 () => _tick.AtEvent(() => _stateMachine.ChangeState(GameState.Flash)));
-
-            //if (_stateMachine.During(GameState.Complete))
-            //{
-            //    if (_tick.IsAtEvent)
-            //    {
-            //        _stateMachine.ChangeState(GameState.Flash);
-            //    }
-            //}
-
-            //if (_stateMachine.OnEntry(GameState.Flash))
-            //{
-            //    _tick.NextEventAfter(12);
-            //    _flashCounter = 0;
-            //}
-
-            //if(_stateMachine.During(GameState.Flash))
-            //{
-            //    if (_tick.IsAtEvent)
-            //    {
-            //        _flashCounter = _flashCounter + 1;
-            //        if (_flashCounter < 9)
-            //        {
-            //            DrawMap(_flashCounter % 2 == 1);
-            //            _tick.NextEventAfter(12);
-            //        }
-            //        else
-            //        {
-            //            _display.Blank();
-            //            _tick.NextEventAfter(20);
-            //        }
-
-            //        if (_flashCounter > 9)
-            //        {
-            //            _level++;
-            //            _stateMachine.ChangeState(GameState.NewLevel);
-            //        }
-            //    }
-            //}
 
             _stateMachine
                 .OnEntry(GameState.Flash,
                     () => _tick.NextEventAfter(12),
                     () => { _flashCounter = 0; })
                 .During(GameState.Flash,
-                    FlashMap);
-
-            //if (_stateMachine.OnEntry(GameState.Caught))
-            //{
-            //    _tick.NextEventAfter(60);
-            //}
-
-            //if(_stateMachine.During(GameState.Caught))
-            //{
-            //    if (_tick.IsAtEvent)
-            //    {
-            //        _stateMachine.ChangeState(GameState.Dying);
-            //        _pacMan.Die();
-            //    }
-            //    _powerPillAnimation.Tick();
-            //    foreach (var ghost in Ghosts)
-            //        ghost.Animation.Tick();
-            //}
+                    () => _tick.AtEvent(FlashMap));
 
             _stateMachine
                 .OnEntry(GameState.Caught,
@@ -361,45 +243,11 @@ namespace PacManArcadeGame.GameItems
                         }
                     }));
 
-            //if (_stateMachine.OnEntry(GameState.Dying))
-            //{
-            //    _tick.NextEventAfter(4 * 60);
-            //}
-
-            //if(_stateMachine.During(GameState.Dying))
-            //{
-            //    _pacMan.Animation.Tick();
-            //    if (_tick.IsAtEvent)
-            //    {
-            //        if (_lives > 0)
-            //        {
-            //            _stateMachine.ChangeState(GameState.StartOfLife);
-            //            ResetGhostsAndPacMan();
-            //            _ghostHouse.LifeLost();
-            //        }
-            //        else
-            //        {
-            //            _stateMachine.ChangeState(GameState.GameOver);
-            //        }
-            //    }
-            //}
-
             _stateMachine
                 .OnEntry(GameState.GameOver,
                     () => _tick.NextEventAfter(4 * 60))
                 .During(GameState.GameOver,
                     () => _tick.AtEvent(() => { _stateMachine.End(); }));
-
-            //if (_stateMachine.OnEntry(GameState.GameOver))
-            //{
-            //    _tick.NextEventAfter(4*60);
-            //}
-
-            //if (_stateMachine.During(GameState.GameOver))
-            //{
-            //    if (_tick.IsAtEvent)
-            //        return false;
-            //}
 
             DrawScore();
             DrawSprites();
@@ -413,14 +261,6 @@ namespace PacManArcadeGame.GameItems
             _ghostHouse.SetActiveGhost(Ghosts);
 
             _stateMachine.During(GameState.Playing, CheckAndSwitchChaseMode);
-
-            //if (_stateMachine.During(GameState.Playing))
-            //{
-            //    if (_scatterChase.Tick())
-            //    {
-            //        SwitchChaseMode();
-            //    }
-            //}
 
             _powerPillAnimation.Tick();
 
@@ -438,10 +278,6 @@ namespace PacManArcadeGame.GameItems
             else
             {
                 DoToGhosts(g => g.Animate());
-                //foreach (var ghost in Ghosts)
-                //{
-                //    ghost.Animate();
-                //}
 
                 if (CheckPacManPill())
                 {
@@ -458,11 +294,6 @@ namespace PacManArcadeGame.GameItems
                     _pacManPause = 3;
                     _ghostHouse.PillEaten();
                     DoToGhosts(g => g.SetFrightened(_speeds.FrightenedFlashTime));
-                    //foreach (var ghost in Ghosts)
-                    //{
-                    //    // Halved timer hack as moving every other tick
-                    //    ghost.SetFrightened(_speeds.FrightenedFlashTime);
-                    //}
 
                     _stateMachine.ChangeState(GameState.Frightened);
                 }
@@ -504,27 +335,6 @@ namespace PacManArcadeGame.GameItems
                                 ghost.SetNotFrightened();
                             }
                         });
-                //if (_stateMachine.OnTrigger(GameState.Frightened))
-                //{
-                //    _tick.NextEventAfter(_speeds.FrightenedTime);
-                //    _ghostEatenPoints = 0;
-                //}
-
-                //if (_stateMachine.During(GameState.Frightened))
-                //{
-                //    if (_tick.IsAtEvent)
-                //    {
-                //        _stateMachine.ChangeState(GameState.Playing);
-                //    }
-                //}
-
-                //if (_stateMachine.OnExit(GameState.Frightened))
-                //{
-                //    foreach (var ghost in Ghosts.Where(g => g.Frightened))
-                //    {
-                //        ghost.SetNotFrightened();
-                //    }
-                //}
 
                 foreach (var ghost in Ghosts)
                 {
@@ -534,18 +344,16 @@ namespace PacManArcadeGame.GameItems
                         {
                             ghost.SetEaten(_ghostEatenPoints);
                             _ghostEatenPause = 60;
-                            _ghostEatenPoints++;
-                            if (!_demoMode)
-                            {
-                                _score += _ghostEatenPoints switch
+                            IncreaseScore(_ghostEatenPoints switch
                                 {
                                     PointsMultiplier.Pts200 => 200,
                                     PointsMultiplier.Pts400 => 400,
                                     PointsMultiplier.Pts800 => 800,
                                     PointsMultiplier.Pts1600 => 1600,
                                     _ => 0
-                                };
-                            }
+                                }
+                            );
+                            _ghostEatenPoints++;
                         }
                         else if (!_invincible && ghost.State == GhostState.Alive)
                         {
@@ -752,32 +560,15 @@ namespace PacManArcadeGame.GameItems
             var inputDirection = InputDirection;
             if (_demoMode)
             {
-                if (_pacMan.Location.CloseToCell ||true)
+                var direction = _aiBot.BestMove(_pacMan.Location, _pacMan.Direction, Ghosts);
+                inputDirection = direction switch
                 {
-                    var direction = _aiBot.BestMove(_pacMan.Location, _pacMan.Direction, Ghosts);
-                    inputDirection = direction switch
-                    {
-                        Direction.Up => InputDirection.Up,
-                        Direction.Down => InputDirection.Down,
-                        Direction.Left => InputDirection.Left,
-                        Direction.Right => InputDirection.Right,
-                        _ => throw new NotImplementedException()
-                    };
-                }
-                //var move = _levelSetup.DemoMoves[_demoMoveNumber];
-                //if (close && cell.Location.IsSameCell(move.Location))
-                //{
-                //    _demoMoveNumber++;
-                //}
-
-                //inputDirection = move.Direction switch
-                //{
-                //    Direction.Up => InputDirection.Up,
-                //    Direction.Down => InputDirection.Down,
-                //    Direction.Left => InputDirection.Left,
-                //    Direction.Right => InputDirection.Right,
-                //    _ => throw new NotImplementedException()
-                //};
+                    Direction.Up => InputDirection.Up,
+                    Direction.Down => InputDirection.Down,
+                    Direction.Left => InputDirection.Left,
+                    Direction.Right => InputDirection.Right,
+                    _ => throw new NotImplementedException()
+                };
             }
 
             if (inputDirection != InputDirection.None)
@@ -855,15 +646,20 @@ namespace PacManArcadeGame.GameItems
             _pacMan.KeepInBounds(MapWidth, MapHeight);
         }
 
+        private void IncreaseScore(int increase)
+        {
+            if (!_demoMode)
+            {
+                _score += increase;
+            }
+        }
+
         private void CheckPacManFruit()
         {
             if (_pacMan.Location.IsNearTo(_bonusFruit.Location))
             {
                 _bonusFruit.Eaten();
-                if (!_demoMode)
-                {
-                    _score += _bonusFruit.Score;
-                }
+                IncreaseScore(_bonusFruit.Score);
             }
         }
         
@@ -873,10 +669,7 @@ namespace PacManArcadeGame.GameItems
             if (cell.CellType != CellType.Pill && cell.CellType != CellType.ThroughSpacePill)
                 return false;
 
-            if (!_demoMode)
-            {
-                _score += 10;
-            }
+            IncreaseScore(10);
             _pillCount++;
             cell.RemovePill();
             _display.Update(_spriteSet.Blank, cell.X, cell.Y+BoardYOffset);
@@ -889,10 +682,7 @@ namespace PacManArcadeGame.GameItems
             if (cell.CellType != CellType.PowerPill)
                 return false;
 
-            if (!_demoMode)
-            {
-                _score += 50;
-            }
+            IncreaseScore(50);
 
             _map.RemovePowerPill(cell.Location);
             cell.RemovePill();
@@ -906,7 +696,6 @@ namespace PacManArcadeGame.GameItems
             _scoreBoard.HighScoreText();
             _scoreBoard.Player1Score(_score);
             _scoreBoard.HighScore(_uiSystem.GetAndUpdateHighScore(_score));
-
 
             if (_stateMachine.IsCurrent(GameState.GameOver) || _demoMode)
             {
@@ -970,19 +759,8 @@ namespace PacManArcadeGame.GameItems
                 },
                 () =>
                 {
-                    foreach (var ghost in Ghosts)
-                    {
-                        DrawBoardSprite(_spriteSet.Ghost(ghost), ghost.Location);
-                    }
+                    DoToGhosts(g => DrawBoardSprite(_spriteSet.Ghost(g), g.Location));
                 });
-            //if (_stateMachine.During(GameState.GetReady, GameState.Playing,
-            //    GameState.Frightened, GameState.Caught))
-            //{
-            //    foreach (var ghost in Ghosts)
-            //    {
-            //        DrawBoardSprite(_spriteSet.Ghost(ghost), ghost.Location);
-            //    }
-            //}
         }
 
         private void DrawScreenSprite(SpriteSource sprite, Location location)

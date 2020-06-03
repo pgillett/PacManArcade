@@ -1,4 +1,7 @@
-﻿using PacManArcadeGame.Helpers;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using PacManArcadeGame.Helpers;
 using PacManArcadeGame.Map;
 
 namespace PacManArcadeGame.Ai
@@ -8,14 +11,14 @@ namespace PacManArcadeGame.Ai
         public readonly int Height;
         public readonly int Width;
 
-        private readonly AiMapCell[,] Cells;
+        private readonly AiMapCell[,] _cells;
 
         public AiMap(Map.Map map)
         {
             Height = map.Height;
             Width = map.Width;
 
-            Cells = new AiMapCell[map.Width, map.Height];
+            _cells = new AiMapCell[map.Width, map.Height];
 
             // Copy the map into the AI map
 
@@ -23,9 +26,20 @@ namespace PacManArcadeGame.Ai
             {
                 for (int x = 0; x < map.Width; x++)
                 {
-                    Cells[x, y] = new AiMapCell(this, x, y, map.Cell(x, y));
+                    _cells[x, y] = new AiMapCell(this, x, y, map.Cell(x, y));
                 }
             }
+
+            // Add the possible moves from every cell
+
+            for (int y = 0; y < map.Height; y++)
+            {
+                for (int x = 0; x < map.Width; x++)
+                {
+                    _cells[x, y].UpdatePossibleDirections();
+                }
+            }
+
         }
 
         /// <summary>
@@ -42,7 +56,7 @@ namespace PacManArcadeGame.Ai
                     for (int x = 0; x < Width; x++)
                     {
                         var cell = Cell(x, y);
-                        if (cell.PlayArea)
+                        if (cell.IsPlayArea)
                         {
                             row = $"{row}{(cell.Distance < 99 ? cell.Distance.ToString("D2") : "99")} ";
                         }
@@ -60,16 +74,32 @@ namespace PacManArcadeGame.Ai
         }
 
         /// <summary>
-        /// Reset the map ready for next distance check
+        /// Calculate the distance to every play square
         /// </summary>
         public void CalcDistance(int x, int y)
         {
-            foreach (var c in Cells)
+            foreach (var c in _cells)
             {
                 c.Reset();
             }
 
-            CalcNextDistance(Cell(x, y), 0);
+            var queue = new Queue<DistanceQueueItem>();
+
+            queue.Enqueue(new DistanceQueueItem(Cell(x,y), 0));
+
+            while (queue.Count > 0)
+            {
+                var next = queue.Dequeue();
+                if (!next.Cell.Visited || next.Distance < next.Cell.Distance)
+                {
+                    next.Cell.Distance = next.Distance;
+                    next.Cell.Visited = true;
+                    foreach (var possible in next.Cell.LinkedCells.Values)
+                    {
+                        queue.Enqueue(new DistanceQueueItem(possible, next.Distance + 1));
+                    }
+                }
+            }
         }
 
         public AiMapCell ClosestPill()
@@ -81,9 +111,9 @@ namespace PacManArcadeGame.Ai
             {
                 for (int x = 0; x < Width; x++)
                 {
-                    var cell = Cells[x, y];
+                    var cell = _cells[x, y];
                     var ct = cell.MapCellDetail.CellType;
-                    if ((ct==CellType.Pill || ct==CellType.ThroughSpacePill) && cell.Distance <= distance)
+                    if ((ct == CellType.Pill || ct == CellType.ThroughSpacePill) && cell.Distance <= distance)
                     {
                         closest = cell;
                         distance = cell.Distance;
@@ -96,62 +126,25 @@ namespace PacManArcadeGame.Ai
 
         public Direction WorkBackTo(int fx, int fy, int tx, int ty)
         {
-            // Directions are opposite as we're working backwards
-
-            var direction = Direction.Down;
-            var cell = Cell(fx, fy - 1);
-
+            while (true)
             {
-                var cell2 = Cell(fx, fy + 1);
-                if (cell2.Score < cell.Score)
-                {
-                    cell = cell2;
-                    direction = Direction.Up;
-                }
-            }
-            {
-                var cell2 = Cell(fx-1, fy);
-                if (cell2.Score < cell.Score)
-                {
-                    cell = cell2;
-                    direction = Direction.Right;
-                }
-            }
-            {
-                var cell2 = Cell(fx+1, fy);
-                if (cell2.Score < cell.Score)
-                {
-                    cell = cell2;
-                    direction = Direction.Left;
-                }
-            }
+                var lowest = Cell(fx, fy)
+                    .LinkedCells.OrderBy(kp => kp.Value.Distance)
+                    .First();
+                var cell = lowest.Value;
 
-            if (cell.X==tx && cell.Y==ty) return direction;
+                // Are we there yet?
+                // Directions are opposite as we're working backwards
 
-            // If not there yet, carry on
+                if (cell.X == tx && cell.Y == ty) return lowest.Key.Opposite();
 
-            return WorkBackTo(cell.X, cell.Y, tx, ty);
+                // No, carry on
+
+                fx = cell.X;
+                fy = cell.Y;
+            }
         }
 
-        private void CalcNextDistance(AiMapCell cell, int distance)
-        {
-            if (cell.Visited)
-            {
-                if (distance > cell.Distance)
-                {
-                    return;
-                }
-            }
-
-            cell.Distance = distance;
-            cell.Visited = true;
-
-            if (cell.Above.PlayArea) CalcNextDistance(cell.Above, distance + 1);
-            if (cell.Below.PlayArea) CalcNextDistance(cell.Below, distance + 1);
-            if (cell.Left.PlayArea) CalcNextDistance(cell.Left, distance + 1);
-            if (cell.Right.PlayArea) CalcNextDistance(cell.Right, distance + 1);
-        }
-
-        public AiMapCell Cell(int x, int y) => Cells[x < 0 ? x + Width : x % Width, y < 0 ? y + Height : y % Height];
+        public AiMapCell Cell(int x, int y) => _cells[x < 0 ? x + Width : x % Width, y < 0 ? y + Height : y % Height];
     }
 }

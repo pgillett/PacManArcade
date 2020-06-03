@@ -2,8 +2,11 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
+using System.Resources;
 using System.Windows.Forms;
 using PacManArcadeGame.Graphics;
+using PacManArcadeGame.Properties;
 
 namespace PacManArcadeWindowsUI
 {
@@ -36,7 +39,11 @@ namespace PacManArcadeWindowsUI
         public BoardRenderer(Form form)
         {
             _form = form;
-            _sprites = new Bitmap("gfx.png");
+
+            using (var ms = new MemoryStream(Resources.gfx))
+            {
+                _sprites = new Bitmap(ms);
+            }
             _fpsStopwatch=new Stopwatch();
             _fpsStopwatch.Start();
         }
@@ -152,7 +159,13 @@ namespace PacManArcadeWindowsUI
 
             FPS(_screenGraphics);
 
-            _bufferedGraphics.Render();
+            try
+            {
+                _bufferedGraphics?.Render();
+            }
+            catch (Exception e)
+            {
+            }
         }
 
         private void FPS(Graphics g)

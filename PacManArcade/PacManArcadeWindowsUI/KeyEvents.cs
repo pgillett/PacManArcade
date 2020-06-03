@@ -33,28 +33,28 @@ namespace PacManArcadeWindowsUI
                     _lastKey = e.KeyCode;
                     break;
                 case Keys.C:
-                    _inputs.Coin = true;
+                    _inputs.Coin.Press();
                     break;
                 case Keys.D1:
-                    _inputs.Player1Start = true;
+                    _inputs.Player1Start.Press();
                     break;
                 case Keys.R:
-                    _inputs.Reset = true;
+                    _inputs.Reset.Press();
                     break;
                 case Keys.P:
-                    _inputs.Pause = true;
+                    _inputs.Pause.Press();
                     break;
                 case Keys.T:
-                    _inputs.Tick = true;
+                    _inputs.Tick.Press();
                     break;
                 case Keys.I:
-                    _inputs.Invincible = true;
+                    _inputs.Invincible.Press();
                     break;
                 case Keys.F:
-                    _inputs.FastForward = true;
+                    _inputs.FastForward.Press();
                     break;
                 case Keys.L:
-                    _inputs.LevelSkip = true;
+                    _inputs.LevelSkip.Press();
                     break;
             }
         }

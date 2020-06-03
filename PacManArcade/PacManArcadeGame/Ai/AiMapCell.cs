@@ -1,4 +1,8 @@
-﻿using PacManArcadeGame.Map;
+﻿using System.Collections.Generic;
+using System.Linq;
+using PacManArcadeGame.Ai;
+using PacManArcadeGame.Helpers;
+using PacManArcadeGame.Map;
 
 namespace PacManArcadeGame.Ai
 {
@@ -11,9 +15,13 @@ namespace PacManArcadeGame.Ai
         public bool Visited;
         public int Distance;
 
-        public bool PlayArea => MapCellDetail.IsPlayArea;
+        public bool IsPlayArea => MapCellDetail.IsPlayArea;
 
         public readonly MapCellDetail MapCellDetail;
+
+        public Dictionary<Direction, AiMapCell> LinkedCells;
+
+        public bool IsJunction => LinkedCells.Count > 2;
 
         public AiMapCell(AiMap map, int x, int y, MapCellDetail mapCellDetail)
         {
@@ -24,17 +32,20 @@ namespace PacManArcadeGame.Ai
             Reset();
         }
 
+        public void UpdatePossibleDirections()
+        {
+            LinkedCells = new[] {Direction.Up, Direction.Down, Direction.Left, Direction.Right}
+                .Where(d => CellInDirection(d).IsPlayArea)
+                .ToDictionary(d => d, CellInDirection);
+
+        }
+
         public void Reset()
         {
             Visited = false;
             Distance = int.MaxValue;
         }
-
-        public int Score => PlayArea ? Distance : int.MaxValue;
-
-        public AiMapCell Above => _map.Cell(X, Y - 1);
-        public AiMapCell Below => _map.Cell(X, Y + 1);
-        public AiMapCell Left => _map.Cell(X - 1, Y);
-        public AiMapCell Right => _map.Cell(X + 1, Y);
+        
+        public AiMapCell CellInDirection(Direction direction) => _map.Cell(X + direction.Dx(), Y + direction.Dy());
     }
 }
