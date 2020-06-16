@@ -22,7 +22,7 @@ namespace PacManArcadeGame.Ai
 
         public Direction BestMove(Location location, Direction currentDirection, IEnumerable<Ghost> ghosts)
         {
-            if (!location.CloseToCell) return currentDirection;
+            if (_lastX == location.CellX && _lastY == location.CellY) return currentDirection;
 
             _lastX = location.CellX;
             _lastY = location.CellY;
@@ -51,19 +51,20 @@ namespace PacManArcadeGame.Ai
 
             // Get list of available moves
 
-            var moves = new List<Direction>();
-
             var pacMan = _aiMap.Cell(location.CellX, location.CellY);
 
-            moves = new[] {Direction.Up, Direction.Down, Direction.Left, Direction.Right}
+            var moves = new[] {Direction.Up, Direction.Down, Direction.Left, Direction.Right}
                 .Where(d => pacMan.CellInDirection(d).IsPlayArea)
                 .ToList();
 
+            if (_counter > 0)
+            {
+                _counter--;
+            }
             if (moves.Count > 1 && _counter > 0)
             {
                 // Don't swap back on self if moved recently
 
-                _counter--;
                 moves.Remove(currentDirection.Opposite());
             }
 
@@ -103,7 +104,7 @@ namespace PacManArcadeGame.Ai
             
             if (bestDirection != _last)
             {
-                _counter = 4;
+                _counter = 2;
             }
 
             _last = bestDirection;

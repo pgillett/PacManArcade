@@ -14,7 +14,7 @@ namespace PacManArcadeGame.GameItems
 {
     public class Game
     {
-        private readonly SpriteSet _spriteSet;
+        private readonly GameDraw _gameDraw;
 
         private InputDirection InputDirection => Inputs.Direction;
         private Inputs Inputs => _uiSystem.Inputs;
@@ -35,11 +35,7 @@ namespace PacManArcadeGame.GameItems
 
         private Map.Map _map;
 
-        private readonly Display _display;
-
         private readonly LevelSetup _levelSetup;
-
-        private readonly ScoreBoard _scoreBoard;
 
         private int _score = 0;
         private int _pillCount = 0;
@@ -48,13 +44,11 @@ namespace PacManArcadeGame.GameItems
 
         private bool _invincible = false;
 
-        private int _lives = 3;
+        private int _lives;
 
         private readonly UiSystem _uiSystem;
 
         private int _level = 0;
-
-        private const int BoardYOffset = 3;
 
         private readonly Animation _powerPillAnimation = new Animation(2, 10);
         private readonly Animation _scoreAnimation = new Animation(2, 16);
@@ -66,7 +60,6 @@ namespace PacManArcadeGame.GameItems
         private int _pacManPause = 0;
 
         private readonly bool _demoMode;
-        private int _demoMoveNumber = 0;
 
         private int _flashCounter = 0;
 
@@ -87,10 +80,8 @@ namespace PacManArcadeGame.GameItems
         protected Game(UiSystem uiSystem, LevelSetup levelSetup, bool demoMode)
         {
             _uiSystem = uiSystem;
-            _display = uiSystem.Display;
-            _spriteSet = uiSystem.SpriteSet;
 
-            _scoreBoard = uiSystem.ScoreBoard;
+            _gameDraw = new GameDraw(uiSystem.SpriteSet, uiSystem.Display, uiSystem.ScoreBoard);
 
             _levelSetup = levelSetup;
 
@@ -99,13 +90,11 @@ namespace PacManArcadeGame.GameItems
                 _demoMode = true;
                 _lives = 0;
                 _stateMachine.ChangeState(GameState.GetReady);
-//                _gameState = GameState.GetReady;
             }
             else
             {
                 _lives = 3;
                 _stateMachine.ChangeState(GameState.Intro);
-//                _gameState = GameState.Intro;
             }
 
             _bonusFruit= new BonusFruit(_levelSetup.FruitLocation);
@@ -131,7 +120,7 @@ namespace PacManArcadeGame.GameItems
             _aiBot = new AiBot(_map);
             _exitGhostHouse = _levelSetup.ExitGhostHouse;
             ResetGhostsAndPacMan();
-            DrawMap(false);
+            _gameDraw.DrawMap(_map, false);
             _pillCount = 0;
             _powerPillAnimation.Reset();
             _scoreAnimation.Reset();
@@ -140,25 +129,13 @@ namespace PacManArcadeGame.GameItems
             _random = new Random();
         }
 
-        private void DisplayReadyText()
-        {
-            _display.WriteLine("PLAYER ONE", TextColour.Cyan, 9, 14);
-            _display.WriteLine("READY!", TextColour.Yellow, 11, 20);
-        }
-
-        private void ClearReadyText()
-        {
-            _display.WriteLine("          ", TextColour.Cyan, 9, 14);
-            _display.WriteLine("      ", TextColour.Yellow, 11, 20);
-        }
-
         public bool Tick()
         {
             _stateMachine.Start();
 
             _tick.Tick();
 
-            _display.ClearSprites();
+            _gameDraw.ClearSprites();
             _scoreAnimation.Tick();
             _invincibleAnimation.Tick();
 
@@ -171,7 +148,7 @@ namespace PacManArcadeGame.GameItems
                     () => _tick.NextEventAfter(120),
                     StartLevel)
                 .During(GameState.Intro,
-                  DisplayReadyText,
+                  () => _gameDraw.DisplayReadyText(),
                     () => _tick.AtEvent(() => _stateMachine.ChangeState(GameState.StartOfLife))
                 );
 
@@ -187,7 +164,7 @@ namespace PacManArcadeGame.GameItems
                 ResetGhostsAndPacMan);
 
             _stateMachine.During(GameState.GetReady,
-                ClearReadyText,
+                () => _gameDraw.ClearReadyText(),
                 () => _tick.AtEvent(() => _stateMachine.ChangeState(GameState.Playing)),
                 () => _scatterChase.Reset(_level),
                 () => _speeds.SetLevel(_level));
@@ -249,8 +226,7 @@ namespace PacManArcadeGame.GameItems
                 .During(GameState.GameOver,
                     () => _tick.AtEvent(() => { _stateMachine.End(); }));
 
-            DrawScore();
-            DrawSprites();
+            Draw();
 
             return !_stateMachine.HasEnded;
         }
@@ -342,18 +318,7 @@ namespace PacManArcadeGame.GameItems
                     {
                         if (ghost.Frightened)
                         {
-                            ghost.SetEaten(_ghostEatenPoints);
-                            _ghostEatenPause = 60;
-                            IncreaseScore(_ghostEatenPoints switch
-                                {
-                                    PointsMultiplier.Pts200 => 200,
-                                    PointsMultiplier.Pts400 => 400,
-                                    PointsMultiplier.Pts800 => 800,
-                                    PointsMultiplier.Pts1600 => 1600,
-                                    _ => 0
-                                }
-                            );
-                            _ghostEatenPoints++;
+                            EatGhost(ghost);
                         }
                         else if (!_invincible && ghost.State == GhostState.Alive)
                         {
@@ -369,17 +334,34 @@ namespace PacManArcadeGame.GameItems
             }
         }
 
+        private void EatGhost(Ghost ghost)
+        {
+            ghost.SetEaten(_ghostEatenPoints);
+            _ghostEatenPause = 60;
+            _tick.PushEvent(60);
+            IncreaseScore(_ghostEatenPoints switch
+                {
+                    PointsMultiplier.Pts200 => 200,
+                    PointsMultiplier.Pts400 => 400,
+                    PointsMultiplier.Pts800 => 800,
+                    PointsMultiplier.Pts1600 => 1600,
+                    _ => 0
+                }
+            );
+            _ghostEatenPoints++;
+        }
+
         private void FlashMap()
         {
             _flashCounter = _flashCounter + 1;
             if (_flashCounter < 9)
             {
-                DrawMap(_flashCounter % 2 == 1);
+                _gameDraw.DrawMap(_map, _flashCounter % 2 == 1);
                 _tick.NextEventAfter(12);
             }
             else
             {
-                _display.Blank();
+                _gameDraw.Blank();
                 _tick.NextEventAfter(20);
             }
 
@@ -403,8 +385,6 @@ namespace PacManArcadeGame.GameItems
             foreach (var ghost in Ghosts)
                 action(ghost);
         }
-
-        private bool SkipMove(int skipTickEvery) => _tick.IsTickStepZero(skipTickEvery);
 
         private void MoveGhosts(bool onlyEyes)
         {
@@ -558,7 +538,7 @@ namespace PacManArcadeGame.GameItems
             var cell = _map.Cell(_pacMan.Location);
             var close = _pacMan.Location.CloseToCell;
             var inputDirection = InputDirection;
-            if (_demoMode)
+            if (_demoMode && close)
             {
                 var direction = _aiBot.BestMove(_pacMan.Location, _pacMan.Direction, Ghosts);
                 inputDirection = direction switch
@@ -672,7 +652,7 @@ namespace PacManArcadeGame.GameItems
             IncreaseScore(10);
             _pillCount++;
             cell.RemovePill();
-            _display.Update(_spriteSet.Blank, cell.X, cell.Y+BoardYOffset);
+            _gameDraw.RemovePill(cell.X, cell.Y);
             return true;
         }
 
@@ -686,103 +666,38 @@ namespace PacManArcadeGame.GameItems
 
             _map.RemovePowerPill(cell.Location);
             cell.RemovePill();
-            _display.Update(_spriteSet.Blank, cell.X, cell.Y + BoardYOffset);
+            _gameDraw.RemovePill(cell.X, cell.Y);
             return true;
         }
 
-        private void DrawScore()
+        private void Draw()
         {
-            _scoreBoard.Player1Text(_scoreAnimation.IsZero || _demoMode);
-            _scoreBoard.HighScoreText();
-            _scoreBoard.Player1Score(_score);
-            _scoreBoard.HighScore(_uiSystem.GetAndUpdateHighScore(_score));
+            _gameDraw.DrawScore(_score, _uiSystem.GetAndUpdateHighScore(_score),
+                _scoreAnimation.IsZero || _demoMode,
+                _stateMachine.IsCurrent(GameState.GameOver) || _demoMode,
+                _uiSystem.Credits, _lives,
+                _bonusFruit.FruitList,
+                _map.Height);
 
-            if (_stateMachine.IsCurrent(GameState.GameOver) || _demoMode)
-            {
-                _scoreBoard.Credits(_uiSystem.Credits);
-                _display.WriteLine("GAME  OVER", TextColour.Red, 9, 20);
-            }
-            else
-            {
-                for (int l = 0; l < _lives; l++)
-                {
-                    DrawBoardSprite(_spriteSet.PacMan(Direction.Left, 1, false),
-                        new Location(2.5m + l * 2, MapHeight + 0.5m));
-                }
+            _gameDraw.DrawFruit(_bonusFruit);
 
-                {
-                    var fl = _bonusFruit.FruitList;
-                    for(int i = 0;i<fl.Count;i++)
-                    {
-                        DrawBoardSprite(_spriteSet.Fruit[fl[i]],
-                            new Location(24.5m - 2 * i, MapHeight + 0.5m));
-                    }
-                }
-            }
-        }
-        
-        private void DrawSprites()
-        {
-            if (_bonusFruit.ShowAsFruit)
-            {
-                DrawBoardSprite(_spriteSet.Fruit[_bonusFruit.Type], _bonusFruit.Location);
-            }
-            if (_bonusFruit.ShowAsScore)
-            {
-                var set = _spriteSet.BonusScores[_bonusFruit.Type];
-                var loc = _bonusFruit.Location.Add(-(set.Count - 1) * 0.5m, 0);
-                for (int x = 0; x < set.Count; x++)
-                {
-                    DrawBoardSprite(set[x], loc.Add(x, 0));
-                }
-            }
-            
             if (_stateMachine.IsCurrent(GameState.Intro, GameState.GetReady)
-                                                       || _powerPillAnimation.IsZero)
+                || _powerPillAnimation.IsZero)
             {
-                foreach (var power in _map.PowerPills)
-                {
-                    DrawBoardSprite(_spriteSet.PowerPill, power);
-                }
+                _gameDraw.DrawPowerPills(_map.PowerPills);
             }
 
             if (!_stateMachine.IsCurrent(GameState.Intro, GameState.GameOver)
-                                                          && _ghostEatenPause == 0
-                                                          && (!_invincible || _invincibleAnimation.IsZero))
+                && _ghostEatenPause == 0
+                && (!_invincible || _invincibleAnimation.IsZero))
             {
-                DrawBoardSprite(_spriteSet.PacMan(_pacMan), _pacMan.Location);
+                _gameDraw.DrawPacMan(_pacMan);
             }
 
             _stateMachine.During(new[]
-                {
-                    GameState.GetReady, GameState.Playing, GameState.Frightened, GameState.Caught
-                },
-                () =>
-                {
-                    DoToGhosts(g => DrawBoardSprite(_spriteSet.Ghost(g), g.Location));
-                });
-        }
-
-        private void DrawScreenSprite(SpriteSource sprite, Location location)
-        {
-            _display.AddSprite(sprite, location);
-        }
-
-        private void DrawBoardSprite(SpriteSource sprite, Location location)
-        {
-            DrawScreenSprite(sprite, location.Add(0, BoardYOffset));
-        }
-
-        private void DrawMap(bool white)
-        {
-            _display.Fill(_spriteSet.Blank);
-            for (int y = 0; y < MapHeight; y++)
             {
-                for (int x = 0; x < MapWidth; x++)
-                {
-                    _display.Update(_spriteSet.Map(_map.Cell(x, y).Piece, white), x, y + BoardYOffset);
-                }
-            }
+                GameState.GetReady, GameState.Playing, GameState.Frightened, GameState.Caught
+            }, () => _gameDraw.DrawGhosts(Ghosts));
         }
     }
 }
