@@ -11,16 +11,19 @@ namespace PacManArcadeGame.Map
         public readonly int X;
         public CellType CellType { get; private set; }
         public MapDisplayPiece Piece;
+        public bool PillEaten { get; private set; }
+        public bool IsThroughSpace { get; private set; }
 
         private readonly Map _map;
         
-        public MapCellDetail(Map map, int x, int y, CellType cellType, MapDisplayPiece mapDisplayPiece)
+        public MapCellDetail(Map map, int x, int y, CellType cellType, bool isThroughSpace, MapDisplayPiece mapDisplayPiece)
         {
             _map = map;
             Y = y;
             X = x;
             CellType = cellType;
             Piece = mapDisplayPiece;
+            IsThroughSpace = isThroughSpace;
         }
 
         public MapCellDetail CellAbove => Cell(0, -1);
@@ -39,8 +42,6 @@ namespace PacManArcadeGame.Map
 
         public bool IsPlayArea => CellType == CellType.Pill
                                   || CellType == CellType.PowerPill
-                                  || CellType == CellType.ThroughSpace
-                                  || CellType == CellType.ThroughSpacePill
                                   || CellType == CellType.Tunnel
                                   || CellType == CellType.PlayArea;
 
@@ -48,16 +49,23 @@ namespace PacManArcadeGame.Map
                                       || CellType == CellType.Door
                                       || CellType == CellType.DeadSpace;
 
-        public bool IsThrough => CellType == CellType.ThroughSpace
-                                 || CellType == CellType.ThroughSpacePill;
-
         public void RemovePill()
         {
-            if (CellType == CellType.Pill || CellType == CellType.PowerPill)
-                CellType = CellType.PlayArea;
-            if (CellType == CellType.ThroughSpacePill)
-                CellType = CellType.ThroughSpace;
+            PillEaten = true;
             Piece = MapDisplayPiece.Blank;
+        }
+
+        public void ResetEaten()
+        {
+            if (CellType == CellType.Pill)
+            {
+                Piece = MapDisplayPiece.Pill;
+                PillEaten = false;
+            }
+            if (CellType == CellType.PowerPill)
+            {
+                PillEaten = false;
+            }
         }
 
         public Location Location => new Location(X, Y);

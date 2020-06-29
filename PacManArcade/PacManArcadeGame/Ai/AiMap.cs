@@ -113,7 +113,7 @@ namespace PacManArcadeGame.Ai
                 {
                     var cell = _cells[x, y];
                     var ct = cell.MapCellDetail.CellType;
-                    if ((ct == CellType.Pill || ct == CellType.ThroughSpacePill) && cell.Distance <= distance)
+                    if ((ct == CellType.Pill && !cell.MapCellDetail.PillEaten) && cell.Distance <= distance)
                     {
                         closest = cell;
                         distance = cell.Distance;

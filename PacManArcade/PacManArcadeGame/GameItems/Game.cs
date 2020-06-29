@@ -117,6 +117,7 @@ namespace PacManArcadeGame.GameItems
         private void StartLevel()
         {
             _map = _levelSetup.Map;
+            _map.Reset();
             _aiBot = new AiBot(_map);
             _exitGhostHouse = _levelSetup.ExitGhostHouse;
             ResetGhostsAndPacMan();
@@ -506,7 +507,7 @@ namespace PacManArcadeGame.GameItems
                                 break;
                         }
 
-                        if (ghost.State != GhostState.Alive || !cell.IsThrough
+                        if (ghost.State != GhostState.Alive || !cell.IsThroughSpace
                                                             || !cell.InDirection(newDirection).IsPlayArea)
                         {
                             var possibles = _directions
@@ -646,7 +647,7 @@ namespace PacManArcadeGame.GameItems
         private bool CheckPacManPill()
         {
             var cell = _map.Cell(_pacMan.Location);
-            if (cell.CellType != CellType.Pill && cell.CellType != CellType.ThroughSpacePill)
+            if (cell.CellType != CellType.Pill || cell.PillEaten)
                 return false;
 
             IncreaseScore(10);
@@ -659,7 +660,7 @@ namespace PacManArcadeGame.GameItems
         private bool CheckPacManPowerPill()
         {
             var cell = _map.Cell(_pacMan.Location);
-            if (cell.CellType != CellType.PowerPill)
+            if (cell.CellType != CellType.PowerPill || cell.PillEaten)
                 return false;
 
             IncreaseScore(50);

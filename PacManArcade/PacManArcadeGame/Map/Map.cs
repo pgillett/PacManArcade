@@ -12,43 +12,27 @@ namespace PacManArcadeGame.Map
 
         private readonly MapCellDetail[,] _map;
 
+        private int _initialPills;
+        private IReadOnlyList<Location> _initialPowerPills;
+
         public int Pills;
-        public readonly List<Location> PowerPills;
+        public List<Location> PowerPills { get; private set; }
 
-        private readonly MapCellDetail _empty;
-
-        private Map()
+        public void Reset()
         {
-            _empty = new MapCellDetail(this, -1, -1, CellType.DeadSpace, MapDisplayPiece.Blank)
-                {Piece = MapDisplayPiece.Blank};
-        }
-
-        private Map(Map map) : this()
-        {
-            Height = map.Height;
-            Width = map.Width;
-
-            _map = new MapCellDetail[Width, Height];
-
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
                 {
-                    var cell = map.Cell(x, y);
-                    _map[x, y] = new MapCellDetail(this, cell.X, cell.Y, cell.CellType, cell.Piece);
+                    Cell(x, y).ResetEaten();
                 }
             }
 
-            Pills = map.Pills;
-            PowerPills = map.PowerPills.ToList();
+            Pills = _initialPills;
+            PowerPills = _initialPowerPills.ToList();
         }
 
-        public Map Copy()
-        {
-            return new Map(this);
-        }
-
-        public Map(string board) : this()
+        public Map(string board)
         {
             if (!board.Contains(c13))
             {
@@ -63,8 +47,8 @@ namespace PacManArcadeGame.Map
 
             _map = new MapCellDetail[Width, Height];
 
-            Pills = 0;
-            PowerPills = new List<Location>();
+            _initialPills = 0;
+            _initialPowerPills = new List<Location>();
 
             MakeBasicMap(lines);
             MakeDetailedMap();
@@ -76,6 +60,8 @@ namespace PacManArcadeGame.Map
 
         private void MakeBasicMap(string[] lines)
         {
+            var powerPills = new List<Location>();
+
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
@@ -83,19 +69,25 @@ namespace PacManArcadeGame.Map
                     var c = lines[y][x];
 
                     CellType piece;
+                    Boolean throughSpace = false;
                     switch (c)
                     {
                         case '.':
                             piece = CellType.Pill;
-                            Pills++;
+                            _initialPills++;
                             break;
                         case ',':
-                            piece = CellType.ThroughSpacePill;
-                            Pills++;
+                            throughSpace = true;
+                            piece = CellType.Pill;
+                            _initialPills++;
                             break;
                         case '*':
                             piece = CellType.PowerPill;
-                            PowerPills.Add(new Location(x, y));
+                            powerPills.Add(new Location(x, y));
+                            break;
+                        case '=':
+                            throughSpace = true;
+                            piece = CellType.PlayArea;
                             break;
                         default:
                             piece = c switch
@@ -107,15 +99,16 @@ namespace PacManArcadeGame.Map
                                 'G' => CellType.GhostWall,
                                 '-' => CellType.Door,
                                 'T' => CellType.Tunnel,
-                                '=' => CellType.ThroughSpace,
                                 _ => throw new NotImplementedException()
                             };
                             break;
                     }
 
-                    _map[x, y] = new MapCellDetail(this, x, y, piece, MapDisplayPiece.Blank);
+                    _map[x, y] = new MapCellDetail(this, x, y, piece, throughSpace, MapDisplayPiece.Blank);
                 }
             }
+
+            _initialPowerPills = powerPills;
         }
 
         private void MakeDetailedMap()
@@ -131,7 +124,6 @@ namespace PacManArcadeGame.Map
                     {
                         case CellType.PlayArea:
                         case CellType.DeadSpace:
-                        case CellType.ThroughSpace:
                         case CellType.Tunnel:
                             cell.Piece = MapDisplayPiece.Blank;
                             break;
@@ -139,7 +131,6 @@ namespace PacManArcadeGame.Map
                             cell.Piece = MapDisplayPiece.GhostDoor;
                             break;
                         case CellType.Pill:
-                        case CellType.ThroughSpacePill:
                             cell.Piece = MapDisplayPiece.Pill;
                             break;
                         case CellType.PowerPill:
@@ -164,7 +155,7 @@ namespace PacManArcadeGame.Map
             var yok = y >= 0 && y < Height;
             if (xok && yok) return _map[x, y];
             var src = _map[xok ? x : 0, yok ? y : 0];
-            return new MapCellDetail(this, x, y, src.CellType, src.Piece);
+            return new MapCellDetail(this, x, y, src.CellType, false, src.Piece);
         }
 
         public MapCellDetail Cell(Location location) => Cell(location.CellX, location.CellY);

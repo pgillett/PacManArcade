@@ -10,8 +10,6 @@
         Door,
         Tunnel,
         Pill,
-        PowerPill,
-        ThroughSpacePill,
-        ThroughSpace
+        PowerPill
     }
 }
